@@ -1,0 +1,20 @@
+--- cql2.json.orig	2025-06-17 13:28:40.179240069 +1000
++++ cql2.json	2025-06-17 13:48:00.384682891 +1000
+@@ -50,7 +50,7 @@
+       "type": "object",
+       "required": ["op", "args"],
+       "properties": {
+-        "op": { "type": "string", "enum": ["=", "<>", "<", ">", "<=", ">="] },
++        "op": { "type": "string", "enum": ["Eq", "Neq", "Lt", "Gt", "Lte", "Gte"] },
+         "args": {"$ref": "#/$defs/scalarOperands"}
+       }
+     },
+@@ -285,7 +285,7 @@
+       "properties": {
+         "op": {
+           "type": "string",
+-          "enum": ["+", "-", "*", "/", "^", "%", "div"]
++          "enum": ["Plus", "Minus", "Mult", "Div", "Exp", "Mod", "IntDiv"]
+         },
+         "args": {"$ref": "#/$defs/arithmeticOperands"}
+       }
