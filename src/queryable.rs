@@ -32,7 +32,7 @@ pub enum Q {
     Num(f64),
     /// Either a known UTF8 character string literal, or one that when used in
     /// comparisons, should be used ignoring its case and/or accent(s).
-    Str(#[doc(hidden)] QString),
+    Str(QString),
     /// A known geometry (spatial) instance.
     Geom(Geometry),
     /// Either a known temporal instant or an unbounded value.
