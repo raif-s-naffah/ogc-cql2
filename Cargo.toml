@@ -6,7 +6,7 @@ edition = "2024"
 description = "OGC CQL2 Text + JSON Encoding parser and interpreter in Rust"
 repository = "https://github.com/raif-s-naffah/ogc-cql2"
 license = "Apache-2.0"
-keywords = ["OGC", "CQL2", "PEG", "JSON", "Parser", "Interpreter"]
+keywords = ["OGC", "CQL2", "PEG", "JSON", "Interpreter"]
 categories = ["data-structures", "parser-implementations", "science::geo"]
 
 # [features]
