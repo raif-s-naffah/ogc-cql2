@@ -96,7 +96,7 @@ In no particular order...
 
 ## License
 
-This product is licensed under the Apache License Version 2.0 &mdash;see [included copy][LICENSE] or [online](https://www.apache.org/licenses/LICENSE-2.0)
+This product is licensed under the Apache License Version 2.0 &mdash;see [included copy](LICENSE) or [online](https://www.apache.org/licenses/LICENSE-2.0)
 
 [1]: https://github.com/opengeospatial/ogcapi-features/blob/master/cql2/standard/data/ne110m4cql2.gpkg
 [2]: https://github.com/sqlitebrowser/sqlitebrowser
