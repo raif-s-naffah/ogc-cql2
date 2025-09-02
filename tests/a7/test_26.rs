@@ -12,7 +12,7 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{harness, COUNTRIES, PLACES, RIVERS};
+use crate::utils::{COUNTRIES, PLACES, RIVERS, harness};
 use std::error::Error;
 use tracing_test::traced_test;
 

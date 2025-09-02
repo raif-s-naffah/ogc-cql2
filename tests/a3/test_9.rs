@@ -205,7 +205,7 @@ fn test() -> Result<(), Box<dyn Error>> {
     // let _c9_ = tracing::span!(tracing::Level::DEBUG, "L1").entered();
     // let _c9_start = _c9_.enter();
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     for (ndx, (p1, p2, p3, p4, expected)) in PREDICATES.iter().enumerate() {
         let input = format!("(NOT ({p2}) AND {p1}) OR ({p3} and {p4}) or not ({p1} OR {p4})");
         // tracing::debug!("input = {input}");

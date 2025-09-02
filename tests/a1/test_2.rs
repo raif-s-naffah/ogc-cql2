@@ -11,7 +11,7 @@
 //!     Decode each string literal.
 //! Then:
 //! * assert that the escaped embedded characters have been correctly recovered.
-//! 
+//!
 
 use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
 use std::error::Error;
@@ -38,7 +38,7 @@ def'"#,
         ("\'abc\u{000D}def\'", "abc\rdef"),    // carriage-return
     ];
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     for (ndx, (s, expected)) in TV.iter().enumerate() {
         let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
         let input = format!("x = {s}");

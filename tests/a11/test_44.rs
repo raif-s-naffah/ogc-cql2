@@ -25,7 +25,7 @@ fn test_contains() -> Result<(), Box<dyn Error>> {
     // IMPORTANT: "foo" and "bar" here are property names; not raw strings...
     const E: &str = r#"A_CONTAINS(list,("foo","bar"))"#;
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
     let exp = Expression::try_from_text(E)?;
     evaluator.setup(exp)?;
@@ -70,7 +70,7 @@ fn test_contains() -> Result<(), Box<dyn Error>> {
 fn test_contained_by() -> Result<(), Box<dyn Error>> {
     const E: &str = r#"A_CONTAINEDBY(list,("foo","bar"))"#;
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
     let exp = Expression::try_from_text(E)?;
     evaluator.setup(exp)?;
@@ -111,7 +111,7 @@ fn test_contained_by() -> Result<(), Box<dyn Error>> {
 fn test_equals() -> Result<(), Box<dyn Error>> {
     const E: &str = r#"A_EQUALS(list,("foo","bar"))"#;
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
     let exp = Expression::try_from_text(E)?;
     evaluator.setup(exp)?;
@@ -153,7 +153,7 @@ fn test_equals() -> Result<(), Box<dyn Error>> {
 fn test_overlaps() -> Result<(), Box<dyn Error>> {
     const E: &str = r#"A_OVERLAPS(list,("foo","bar"))"#;
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
     let exp = Expression::try_from_text(E)?;
     evaluator.setup(exp)?;

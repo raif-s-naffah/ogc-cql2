@@ -415,7 +415,7 @@ mod tests {
     #[test]
     // #[tracing_test::traced_test]
     fn test_unregistered() -> Result<(), Box<dyn Error>> {
-        let shared_ctx = Context::new_shared();
+        let shared_ctx = Context::new().freeze();
 
         let expr = Expression::try_from_text("sum(a, b)")?;
         let mut eval = EvaluatorImpl::new(shared_ctx);
@@ -565,7 +565,11 @@ mod tests {
     #[test]
     // #[tracing_test::traced_test]
     fn test_geom_builtins() -> Result<(), Box<dyn Error>> {
-        let mut ctx = Context::new();
+        // IMPORTANT (rsn) 20250901 - if we rely on Context::new() we leave
+        // the context subject to the global configuration which may be using
+        // an implicit CRS code that's unexpected for the test.  specifically
+        // the pre-conditions of this test expect WGS-84 coordinates...
+        let mut ctx = Context::try_with_crs("epsg:4326")?;
         ctx.register_builtins();
         let shared_ctx = ctx.freeze();
 

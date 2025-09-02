@@ -17,7 +17,7 @@
 //!
 
 use crate::utils::random_unicode_word;
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, QString, Resource, Q};
+use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, QString, Resource};
 use rand::{Rng, rng};
 use std::error::Error;
 use tracing_test::traced_test;
@@ -45,7 +45,7 @@ fn test() -> Result<(), Box<dyn Error>> {
     let (mut actual_true1, mut actual_false1, mut actual_null1) = (0, 0, 0);
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
     let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());

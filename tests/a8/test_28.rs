@@ -58,7 +58,7 @@ fn test_e1_invalid_coordinates() -> Result<(), Box<dyn Error>> {
     const E: &str = r#"S_INTERSECTS(geom,MULTIPOINT((7.02 49.92), (90 180)))"#;
 
     let expr = Expression::try_from_text(E)?;
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx);
     evaluator.setup(expr)?;
 
@@ -98,7 +98,7 @@ fn test_e2() -> Result<(), Box<dyn Error>> {
     ];
 
     let expr = Expression::try_from_text(E)?;
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx);
     evaluator.setup(expr)?;
 
@@ -158,7 +158,7 @@ fn test_e3() -> Result<(), Box<dyn Error>> {
     ];
 
     let expr = Expression::try_from_text(E)?;
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx);
     evaluator.setup(expr)?;
 
@@ -217,7 +217,7 @@ fn test_e4() -> Result<(), Box<dyn Error>> {
     ];
 
     let expr = Expression::try_from_text(E)?;
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx);
     evaluator.setup(expr)?;
 
@@ -280,7 +280,7 @@ fn test_e5() -> Result<(), Box<dyn Error>> {
     ];
 
     let expr = Expression::try_from_text(E)?;
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx);
     evaluator.setup(expr)?;
 
@@ -343,7 +343,7 @@ fn test_e6() -> Result<(), Box<dyn Error>> {
     ];
 
     let expr = Expression::try_from_text(E)?;
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx);
     evaluator.setup(expr)?;
 

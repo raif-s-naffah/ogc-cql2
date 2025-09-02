@@ -34,8 +34,8 @@
 //!
 
 use crate::utils::random_ascii_word;
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
 use jiff::{Timestamp, ToSpan, civil::Date};
+use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
 use rand::{
     Rng,
     distr::{Distribution, Uniform},
@@ -48,7 +48,7 @@ use tracing_test::traced_test;
 fn test_equal_bool() -> Result<(), Box<dyn Error>> {
     let mut rng = rand::rng();
     let mut random_bool = || rng.random_bool(0.5);
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
 
     const E1: &str = r#"z_bool = TRUE"#;
     let expr1 = Expression::try_from_text(E1)?;
@@ -132,7 +132,7 @@ fn test_equal_int() -> Result<(), Box<dyn Error>> {
 
     let mut rng = rand::rng();
     let dist = Uniform::new_inclusive(MEDIAN - 2, MEDIAN + 2).expect("Failed uniform distribution");
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let expr1 = Expression::try_from_text(E1)?;
     let expr2 = Expression::try_from_text(E2)?;
 
@@ -213,7 +213,7 @@ fn test_less_int() -> Result<(), Box<dyn Error>> {
     let mut rng = rand::rng();
     let dist =
         Uniform::new_inclusive(MEDIAN - 10, MEDIAN + 10).expect("Failed uniform distribution");
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let expr1 = Expression::try_from_text(E1)?;
     let expr2 = Expression::try_from_text(E2)?;
 
@@ -294,7 +294,7 @@ fn test_greater_int() -> Result<(), Box<dyn Error>> {
     let mut rng = rand::rng();
     let dist =
         Uniform::new_inclusive(MEDIAN - 10, MEDIAN + 10).expect("Failed uniform distribution");
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let expr1 = Expression::try_from_text(E1)?;
     let expr2 = Expression::try_from_text(E2)?;
 
@@ -375,7 +375,7 @@ fn test_equal_float() -> Result<(), Box<dyn Error>> {
     let mut rng = rand::rng();
     let dist =
         Uniform::new_inclusive(MEDIAN - 2.0, MEDIAN + 2.0).expect("Failed uniform distribution");
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let expr1 = Expression::try_from_text(E1)?;
     let expr2 = Expression::try_from_text(E2)?;
 
@@ -456,7 +456,7 @@ fn test_less_float() -> Result<(), Box<dyn Error>> {
     let mut rng = rand::rng();
     let dist =
         Uniform::new_inclusive(MEDIAN - 10.0, MEDIAN + 10.0).expect("Failed uniform distribution");
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let expr1 = Expression::try_from_text(E1)?;
     let expr2 = Expression::try_from_text(E2)?;
 
@@ -537,7 +537,7 @@ fn test_greater_float() -> Result<(), Box<dyn Error>> {
     let mut rng = rand::rng();
     let dist =
         Uniform::new_inclusive(MEDIAN - 10.0, MEDIAN + 10.0).expect("Failed uniform distribution");
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let expr1 = Expression::try_from_text(E1)?;
     let expr2 = Expression::try_from_text(E2)?;
 
@@ -618,7 +618,7 @@ fn test_equal_timestamp() -> Result<(), Box<dyn Error>> {
 
     let mut rng = rand::rng();
     let dist = Uniform::new_inclusive(median - 2, median + 2).expect("Failed uniform distribution");
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let expr1 = Expression::try_from_text(E1)?;
     let expr2 = Expression::try_from_text(E2)?;
 
@@ -700,7 +700,7 @@ fn test_less_timestamp() -> Result<(), Box<dyn Error>> {
     let mut rng = rand::rng();
     let dist =
         Uniform::new_inclusive(median - 2000, median + 2000).expect("Failed uniform distribution");
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let expr1 = Expression::try_from_text(E1)?;
     let expr2 = Expression::try_from_text(E2)?;
 
@@ -782,7 +782,7 @@ fn test_greater_timestamp() -> Result<(), Box<dyn Error>> {
     let mut rng = rand::rng();
     let dist =
         Uniform::new_inclusive(median - 2000, median + 2000).expect("Failed uniform distribution");
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let expr1 = Expression::try_from_text(E1)?;
     let expr2 = Expression::try_from_text(E2)?;
 
@@ -868,7 +868,7 @@ fn test_equal_date() -> Result<(), Box<dyn Error>> {
     let (mut expect_true2, mut expect_false2) = (0, 0);
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
     let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
@@ -946,7 +946,7 @@ fn test_less_date() -> Result<(), Box<dyn Error>> {
     let (mut expect_true2, mut expect_false2) = (0, 0);
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
     let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
@@ -1024,7 +1024,7 @@ fn test_greater_date() -> Result<(), Box<dyn Error>> {
     let (mut expect_true2, mut expect_false2) = (0, 0);
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
     let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
@@ -1101,7 +1101,7 @@ fn test_equal_str() -> Result<(), Box<dyn Error>> {
     let (mut expect_true2, mut expect_false2) = (0, 0);
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
     let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
@@ -1183,7 +1183,7 @@ fn test_less_str() -> Result<(), Box<dyn Error>> {
     let (mut expect_true2, mut expect_false2) = (0, 0);
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
     let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
@@ -1264,7 +1264,7 @@ fn test_greater_str() -> Result<(), Box<dyn Error>> {
     let (mut expect_true2, mut expect_false2) = (0, 0);
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
     let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());

@@ -31,7 +31,7 @@ fn test() -> Result<(), Box<dyn Error>> {
     let expr1 = Expression::try_from_text(E1)?;
     let expr2 = Expression::try_from_text(E2)?;
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
     let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());

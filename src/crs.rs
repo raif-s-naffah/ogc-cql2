@@ -11,8 +11,6 @@ use core::fmt;
 use proj::Proj;
 use tracing::info;
 
-pub(crate) const DEFAULT_CRS: &str = "EPSG:4326";
-
 #[derive(Debug)]
 struct EoV {
     /// horizontal or longitudinal extent bounds.

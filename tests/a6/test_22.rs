@@ -39,8 +39,9 @@ fn starts_with_prefix() -> String {
 fn test() -> Result<(), Box<dyn Error>> {
     const E1: &str = r#"ACCENTI(CASEI(z_string)) LIKE accenti(casei('Ä%'))"#;
     const E2: &str = r#"ACCENTI(CASEI(z_string)) LIKE accenti(casei('a%'))"#;
+    #[rustfmt::skip]
     const CANDIDATES: [char; 46] = [
-        'a', 'à', 'á', 'â', 'ã', 'ä', 'å', 'ā', 'ă', 
+        'a', 'à', 'á', 'â', 'ã', 'ä', 'å', 'ā', 'ă',
         'ą', 'ǎ', 'ȁ', 'ȃ', 'ȧ', 'ḁ', 'ẚ', 'ạ', 'ả',
         'ặ', 'ằ', 'ầ', 'ẩ', 'ǟ',
         'A', 'À', 'Á', 'Â', 'Ã', 'Ä', 'Å', 'Ā', 'Ă',
@@ -50,7 +51,7 @@ fn test() -> Result<(), Box<dyn Error>> {
     let expr1 = Expression::try_from_text(E1)?;
     let expr2 = Expression::try_from_text(E2)?;
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
     let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());

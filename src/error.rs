@@ -12,7 +12,7 @@ use thiserror::Error;
 /// Variants of error raised from this library.
 #[derive(Debug, Error)]
 pub enum MyError {
-    /// Data serialization/deserialization, parsing + validation errors.
+    /// Input/Output realted error.
     #[error("I/O error: {0}")]
     IO(#[from] std::io::Error),
 

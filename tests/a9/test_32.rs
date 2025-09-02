@@ -17,15 +17,16 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{harness, COUNTRIES};
-use std::{error::Error};
+use crate::utils::{COUNTRIES, harness};
+use std::error::Error;
 use tracing_test::traced_test;
 
 // Countries CSV data set contains 177 records all being polygons...
+#[rustfmt::skip]
 const PREDICATES: [(&str, u32); 3] = [
     ("S_EQUALS(geom,POLYGON((-180 -90,180 -90,180 90,-180 90,-180 -90)))", 0),
-    ("S_EQUALS(geom,LINESTRING(7 50,10 51))", 0),
-    ("S_EQUALS(geom,POINT(7.02 49.92))", 0),
+    ("S_EQUALS(geom,LINESTRING(7 50,10 51))",                              0),
+    ("S_EQUALS(geom,POINT(7.02 49.92))",                                   0),
 ];
 
 #[test]

@@ -21,8 +21,8 @@
 //! * store the valid predicates for each data source.
 //!
 
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
 use jiff::{Timestamp, ToSpan, civil::Date};
+use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
 use rand::{Rng, distr::Uniform};
 use std::error::Error;
 use tracing_test::traced_test;
@@ -34,7 +34,7 @@ fn test_numbers() -> Result<(), Box<dyn Error>> {
     const LIST: [u32; 3] = [1, 2, 3];
 
     let mut rng = rand::rng();
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
 
     let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
     let exp = Expression::try_from_text(&format!("{E}"))?;
@@ -81,7 +81,7 @@ fn test_strings() -> Result<(), Box<dyn Error>> {
     ];
 
     let mut rng = rand::rng();
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
 
     let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
     let exp = Expression::try_from_text(&format!("{E}"))?;
@@ -122,7 +122,7 @@ fn test_booleans() -> Result<(), Box<dyn Error>> {
     const LIST: [bool; 1] = [true];
 
     let mut rng = rand::rng();
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
 
     let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
     let exp = Expression::try_from_text(&format!("{E}"))?;
@@ -158,7 +158,8 @@ fn test_booleans() -> Result<(), Box<dyn Error>> {
 #[traced_test]
 fn test_timestamps() -> Result<(), Box<dyn Error>> {
     // const E: &str = r#"foo in ('2022-04-14T14:52:56Z', '2022-04-14T15:52:56Z')"#;
-    const E: &str = r#"foo in (timestamp('2022-04-14T14:52:56Z'), TIMEStamp('2022-04-14T15:52:56Z'))"#;
+    const E: &str =
+        r#"foo in (timestamp('2022-04-14T14:52:56Z'), TIMEStamp('2022-04-14T15:52:56Z'))"#;
 
     let t1: Timestamp = "2022-04-14T14:52:56Z".parse()?;
     let t2: Timestamp = "2022-04-14T15:52:56Z".parse()?;
@@ -167,7 +168,7 @@ fn test_timestamps() -> Result<(), Box<dyn Error>> {
 
     let mean = t1.checked_add(30.minutes())?; // interval is 1 hour
     let mut rng = rand::rng();
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
 
     let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
     let exp = Expression::try_from_text(&format!("{E}"))?;
@@ -216,7 +217,7 @@ fn test_dates() -> Result<(), Box<dyn Error>> {
     let mean = d1.checked_add(12.hours())?;
 
     let mut rng = rand::rng();
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
 
     let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
     let exp = Expression::try_from_text(&format!("{E}"))?;

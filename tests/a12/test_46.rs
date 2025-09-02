@@ -28,7 +28,7 @@
 //!   and <> have no item in common;
 //! * assert that the two result sets for each queryable for the operators >
 //!   and <= have no item in common;
-//! * assert that the two result sets for each queryable for the operators < 
+//! * assert that the two result sets for each queryable for the operators <
 //!   and >= have no item in common;
 //! * store the valid predicates for each data source.
 //!
@@ -45,7 +45,7 @@ fn test_string() -> Result<(), Box<dyn Error>> {
     const E5: &str = "'foo' < var";
     const E6: &str = "'foo' >= var";
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
@@ -130,7 +130,7 @@ fn test_number() -> Result<(), Box<dyn Error>> {
     const E5: &str = "3.14 < var";
     const E6: &str = "3.14 >= var";
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
@@ -215,7 +215,7 @@ fn test_integer() -> Result<(), Box<dyn Error>> {
     const E5: &str = "1 < var";
     const E6: &str = "1 >= var";
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
@@ -296,7 +296,7 @@ fn test_integer() -> Result<(), Box<dyn Error>> {
 // my understanding is that this is programming language related and there
 // is no known "standard" that one can follow.  in Rust, these relations
 // hold as of release 1.89.0...
-// 
+//
 // [true | false] < false? false
 // true > false? true
 // true <= false? false
@@ -321,7 +321,7 @@ fn test_boolean() -> Result<(), Box<dyn Error>> {
     const E5: &str = "true < var";
     const E6: &str = "true >= var";
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
@@ -371,7 +371,6 @@ fn test_boolean() -> Result<(), Box<dyn Error>> {
     let res = evaluator4.evaluate(&feat)?;
     assert!(matches!(res, Outcome::T));
 
-
     let res = evaluator5.evaluate(&feat)?;
     assert!(matches!(res, Outcome::F));
     let res = evaluator6.evaluate(&feat)?;
@@ -409,7 +408,7 @@ fn test_timestamp() -> Result<(), Box<dyn Error>> {
     const E5: &str = "TIMESTAMP('2022-04-14T14:48:46Z') < var";
     const E6: &str = "TIMESTAMP('2022-04-14T14:48:46Z') >= var";
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
@@ -432,7 +431,10 @@ fn test_timestamp() -> Result<(), Box<dyn Error>> {
     // test equal and not equal...
     let feat = Resource::from([
         ("fid".into(), Q::try_from(1)?),
-        ("var".into(), Q::try_from_timestamp_str("2022-04-14T14:48:46Z")?),
+        (
+            "var".into(),
+            Q::try_from_timestamp_str("2022-04-14T14:48:46Z")?,
+        ),
     ]);
     let res = evaluator1.evaluate(&feat)?;
     assert!(matches!(res, Outcome::T));
@@ -441,7 +443,10 @@ fn test_timestamp() -> Result<(), Box<dyn Error>> {
 
     let feat = Resource::from([
         ("fid".into(), Q::try_from(2)?),
-        ("var".into(), Q::try_from_timestamp_str("2022-04-14T14:48:47Z")?),
+        (
+            "var".into(),
+            Q::try_from_timestamp_str("2022-04-14T14:48:47Z")?,
+        ),
     ]);
     let res = evaluator1.evaluate(&feat)?;
     assert!(matches!(res, Outcome::F));
@@ -451,7 +456,10 @@ fn test_timestamp() -> Result<(), Box<dyn Error>> {
     // test the rest...
     let feat = Resource::from([
         ("fid".into(), Q::try_from(3)?),
-        ("var".into(), Q::try_from_timestamp_str("2012-04-14T14:48:46Z")?),
+        (
+            "var".into(),
+            Q::try_from_timestamp_str("2012-04-14T14:48:46Z")?,
+        ),
     ]);
     let res = evaluator3.evaluate(&feat)?;
     assert!(matches!(res, Outcome::T));
@@ -464,7 +472,10 @@ fn test_timestamp() -> Result<(), Box<dyn Error>> {
 
     let feat = Resource::from([
         ("fid".into(), Q::try_from(4)?),
-        ("var".into(), Q::try_from_timestamp_str("2025-08-17T14:48:46Z")?),
+        (
+            "var".into(),
+            Q::try_from_timestamp_str("2025-08-17T14:48:46Z")?,
+        ),
     ]);
     let res = evaluator3.evaluate(&feat)?;
     assert!(matches!(res, Outcome::F));
@@ -494,7 +505,7 @@ fn test_date() -> Result<(), Box<dyn Error>> {
     const E5: &str = "DATE('2022-04-14') < var";
     const E6: &str = "DATE('2022-04-14') >= var";
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;

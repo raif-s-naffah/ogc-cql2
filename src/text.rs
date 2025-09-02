@@ -1001,7 +1001,7 @@ def'"#,
         let expr = expression(E)?;
         // tracing::debug!("expr = {expr:?}");
 
-        let res = expr.eval(&Context::default(), &Resource::new())?;
+        let res = expr.eval(&Context::new(), &Resource::new())?;
         // tracing::debug!("res = {res:?}");
         assert!(res.to_bool()?);
 

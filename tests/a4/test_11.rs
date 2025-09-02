@@ -26,7 +26,7 @@ fn test() -> Result<(), Box<dyn Error>> {
     const E2: &str = r#"foo between 100.0 and 1.0"#;
 
     let mut rng = rand::rng();
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
 
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     let input1 = format!("{E1}");

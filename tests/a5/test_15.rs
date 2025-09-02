@@ -47,7 +47,7 @@ fn test() -> Result<(), Box<dyn Error>> {
     let (mut expect_true2, mut expect_false2) = (0, 0);
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
     let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());

@@ -78,7 +78,15 @@ pub(crate) fn harness(data_set: usize, predicates: Vec<(&str, u32)>) -> Result<(
     let mut evaluators = vec![];
     let mut expected = vec![];
     let mut actual = vec![];
-    let shared_ctx = Context::new_shared();
+
+    // IMPORTANT (rsn) 20250901 - as mentioned often in the comments + docs,
+    // some conformance tests that expect a failure due to "invalid coordinate"
+    // assume that the _implicit_ CRS against which coordinates are checked is
+    // in fact EPSG:4326.  Our library allows configuring any valid CRS as the
+    // implicit one to use when evaluating Expressions. W/o properly setting
+    // a `Context` that takes this into account, the test(s) may fail.
+    let shared_ctx = Context::try_with_crs("epsg:4326")?.freeze();
+
     for (input, success_count) in predicates {
         let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
         let expr = Expression::try_from_text(input)?;

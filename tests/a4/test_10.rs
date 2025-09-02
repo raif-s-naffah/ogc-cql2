@@ -22,8 +22,8 @@
 //!
 
 use crate::utils::{ZCountry, countries, countries_reader};
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
 use csv::Reader;
+use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
 use std::{error::Error, fs::File};
 use tracing::error;
 use tracing_test::traced_test;
@@ -38,7 +38,7 @@ const LP5: &str = "NAME like '\\%\\_'";
 #[test]
 #[traced_test]
 fn test_outcome_1() -> Result<(), Box<dyn Error>> {
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
     let input = format!("{LP1}");
     let exp = Expression::try_from_text(&input)?;
@@ -59,7 +59,7 @@ fn test_outcome_1() -> Result<(), Box<dyn Error>> {
 #[test]
 #[traced_test]
 fn test_outcome_2() -> Result<(), Box<dyn Error>> {
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
 
@@ -102,7 +102,7 @@ fn test_outcome_2() -> Result<(), Box<dyn Error>> {
 #[test]
 #[traced_test]
 fn test_outcome_3() -> Result<(), Box<dyn Error>> {
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
 
@@ -139,7 +139,7 @@ fn test_outcome_4() -> Result<(), Box<dyn Error>> {
         (r#"_"#, false),
     ];
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
     let input = format!("{LP5}");
     let exp = Expression::try_from_text(&input)?;

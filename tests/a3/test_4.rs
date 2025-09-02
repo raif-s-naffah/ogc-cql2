@@ -31,7 +31,7 @@ fn test_boolean() -> Result<(), Box<dyn Error>> {
     // start by parsing the test vector...
     let expr = Expression::try_from_text(F)?;
     // instantiate an evaluator + set it up...
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx);
     evaluator.setup(expr)?;
 
@@ -80,7 +80,7 @@ fn test_num() -> Result<(), Box<dyn Error>> {
     const F: &str = r#"foo:x IN (0.1,0.2)"#;
 
     let expr = Expression::try_from_text(F)?;
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx);
     evaluator.setup(expr)?;
 
@@ -118,7 +118,7 @@ fn test_string() -> Result<(), Box<dyn Error>> {
     const F: &str = r#"foo:id = 'bonza'"#;
 
     let expr = Expression::try_from_text(F)?;
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx);
     evaluator.setup(expr)?;
 
@@ -156,7 +156,7 @@ fn test_instant() -> Result<(), Box<dyn Error>> {
     const F: &str = r#"T_Before(built, date('2025-07-14'))"#;
 
     let expr = Expression::try_from_text(F)?;
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx);
     evaluator.setup(expr)?;
 
@@ -198,7 +198,7 @@ fn test_interval() -> Result<(), Box<dyn Error>> {
         r#"T_During(interval(a, b), INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"#;
 
     let expr = Expression::try_from_text(F)?;
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx);
     evaluator.setup(expr)?;
 
@@ -243,7 +243,7 @@ fn test_point_and_polygon() -> Result<(), Box<dyn Error>> {
     const F: &str = r#"S_WITHIN("geom", POLYGON((-65.887123 2.00001, 0.333333 -53.017711, 180.0 0.0, -65.887123 2.00001), (-49.88024 0.5, -1.5 -0.99999, 0.0 0.5, -49.88024 0.5)))"#;
 
     let expr = Expression::try_from_text(F)?;
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx);
     evaluator.setup(expr)?;
 
@@ -283,7 +283,7 @@ fn test_line() -> Result<(), Box<dyn Error>> {
     const F: &str = r#"s_crosses(LineString(-65.0 2.0, 0.33 -53.017, 90.0 0.0), "geom")"#;
 
     let expr = Expression::try_from_text(F)?;
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx);
     evaluator.setup(expr)?;
 

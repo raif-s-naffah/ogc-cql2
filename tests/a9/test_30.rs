@@ -43,7 +43,7 @@ fn test_invalid_coordinates() -> Result<(), Box<dyn Error>> {
     const E: &str = r#"S_INTERSECTS(geom,POINT(90 180))"#;
 
     let expr = Expression::try_from_text(E)?;
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx);
     evaluator.setup(expr)?;
 

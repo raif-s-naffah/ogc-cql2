@@ -74,6 +74,27 @@ The [issue here](https://github.com/opengeospatial/ogcapi-features/issues/1011) 
 
 For now, the relevant test (`a6/test_23.rs`) expected results have been amended according to the findings reported in the issue in question.
 
+### How to configure this library
+
+1. Make a copy of the file `.env.template` and rename it `.env`.
+2. Make sure `.env` is included in `.gitignore`.
+3. Edit the contents of `.env` to suit your requirements and environment.
+
+For now these are the environment variables that can be configured:
+
+#### `DEFAULT_CRS`
+
+_Coordinate Reference System_ (CRS) code to use when validating geometry coordinates. Defaults to `EPSG:4326` if/when undefined.
+
+#### `DEFAULT_PRECISION`
+_Precision_ (number of digits after the decimal point) to keep/use when processing coordinates. Defaults to `6` if/when undefined. For _WGS 84_ coordinates this translates to approx. `11.1` cm. accuracy when projecting them to _Web Mercator_.
+
+For now only positive integers in the range `0..7` inclusive are allowed.
+
+
+#### `RUST_LOG`
+See <https://docs.rs/env_logger/latest/env_logger/#enabling-logging> for details.
+
 
 ## TODO
 
@@ -89,8 +110,8 @@ In no particular order...
 - [ ] Improve performance.
 - [ ] Reduce code repetition by using more macros.
 - [ ] Investigate alternative means for external clients to inject functions logic + metadata.
-- [ ] The WKT parsing machinery entry-point is private. Make it public.
-- [ ] Properly manage + handle global configurable options such as default CRS bearing in mind how it may affect conformance tests.
+- [x] ~~The WKT parsing machinery entry-point is private. Make it public.~~ Done 2025-08-31.
+- [x] ~~Properly manage + handle global configurable options such as default CRS bearing in mind how it may affect conformance tests.~~ Done 2025-09-02.
 - [ ] Add an LRU to store commonly used CRSes.
 
 

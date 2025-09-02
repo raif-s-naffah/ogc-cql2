@@ -44,6 +44,7 @@
 //!
 
 #![doc = include_str!("../doc/FUNCTION.md")]
+#![doc = include_str!("../doc/CONFIGURATION.md")]
 
 mod bound;
 mod config;
@@ -75,11 +76,6 @@ pub use function::*;
 pub use geom::*;
 pub use qstring::QString;
 pub use queryable::*;
-
-/// Default number of decimals to show in coordinates. For coordinates in
-/// WGS 84 this translates to approx. `11.1` cm. accuracy when projecting
-/// coordinates in that reference system to EPSG:3857 (Web Mercator in m.).
-pub const DEFAULT_PRECISION: usize = 6;
 
 #[derive(Debug)]
 /// An instance of an OGC CQL2 filter.

@@ -6,16 +6,17 @@
 //! Basic spatial type facades visible from this library.
 //!
 
-use crate::{DEFAULT_PRECISION, MyError, crs::CRS, text::cql2::wkt};
+use crate::{MyError, config::config, crs::CRS, text::cql2::wkt};
 use core::fmt;
-use geos::{CoordSeq, Geom, Geometry};
+use geos::{CoordSeq, Geometry};
 use tracing::error;
 
 /// Ensure a float only has a fixed number of decimal digits in its fractional
 /// part.
 fn ensure_precision(x: &f64) -> f64 {
     let d = 10.0_f64.powi(
-        DEFAULT_PRECISION
+        config()
+            .default_precision()
             .try_into()
             .expect("Failed coercing DEFAULT_PRECISION"),
     );
@@ -43,12 +44,40 @@ pub enum G {
     BBox(BBox),
 }
 
-pub(crate) trait GTrait {
+/// Geometry Trait implemented by all geometry types in this library.
+pub trait GTrait {
     /// Return TRUE if coordinates are 2D. Return FALSE otherwise.
     fn is_2d(&self) -> bool;
 
     /// Generate a WKT string representing this.
-    fn to_wkt(&self) -> String;
+    ///
+    /// This is a convenience method that calls the `to_wkt_fmt()` method w/ a
+    /// pre-configured default precision value.
+    ///
+    /// See the documentation in `.env.template` for `DEFAULT_PRECISION`.
+    fn to_wkt(&self) -> String {
+        self.to_wkt_fmt(config().default_precision())
+    }
+
+    /// Generate a WKT string similar to the `to_wkt()`alternative but w/ a
+    /// given `precision` paramter representing the number of digits to print
+    /// after the decimal point. Note though that if `precision` is `0` only
+    /// the integer part of the coordinate will be shown.
+    ///
+    /// Here are some examples...
+    /// ```rust
+    /// use ogc_cql2::prelude::*;
+    /// # use std::error::Error;
+    /// # fn test() -> Result<(), Box<dyn Error>> {
+    ///     let g = G::try_from_wkt("LINESTRING(-180 -45,0 -45)")?;
+    ///     assert_eq!(g.to_wkt_fmt(1), "LINESTRING (-180.0 -45.0, 0.0 -45.0)");
+    ///     // ...
+    ///     let g = G::try_from_wkt("POINT(-46.035560 -7.532500)")?;
+    ///     assert_eq!(g.to_wkt_fmt(0), "POINT (-46 -7)");
+    /// # Ok(())
+    /// # }
+    /// ```
+    fn to_wkt_fmt(&self, precision: usize) -> String;
 
     /// Check if all geometry coordinates fall w/in a given CRS's Area-of-Use,
     /// aka Extent-of-Validity.
@@ -72,16 +101,16 @@ impl GTrait for G {
         }
     }
 
-    fn to_wkt(&self) -> String {
+    fn to_wkt_fmt(&self, precision: usize) -> String {
         match self {
-            G::Point(x) => x.to_wkt(),
-            G::Line(x) => x.to_wkt(),
-            G::Polygon(x) => x.to_wkt(),
-            G::Points(x) => x.to_wkt(),
-            G::Lines(x) => x.to_wkt(),
-            G::Polygons(x) => x.to_wkt(),
-            G::Vec(x) => x.to_wkt(),
-            G::BBox(x) => x.to_wkt(),
+            G::Point(x) => x.to_wkt_fmt(precision),
+            G::Line(x) => x.to_wkt_fmt(precision),
+            G::Polygon(x) => x.to_wkt_fmt(precision),
+            G::Points(x) => x.to_wkt_fmt(precision),
+            G::Lines(x) => x.to_wkt_fmt(precision),
+            G::Polygons(x) => x.to_wkt_fmt(precision),
+            G::Vec(x) => x.to_wkt_fmt(precision),
+            G::BBox(x) => x.to_wkt_fmt(precision),
         }
     }
 
@@ -149,11 +178,14 @@ impl GTrait for Point {
         self.coord.len() == 2
     }
 
-    fn to_wkt(&self) -> String {
+    fn to_wkt_fmt(&self, precision: usize) -> String {
         if self.is_2d() {
-            format!("POINT ({})", Self::coords_as_txt(self.as_2d()))
+            format!("POINT ({})", Self::coords_with_dp(self.as_2d(), precision))
         } else {
-            format!("POINT Z ({})", Self::coords_as_txt(self.as_3d()))
+            format!(
+                "POINT Z ({})",
+                Self::coords_with_dp(self.as_3d(), precision)
+            )
         }
     }
 
@@ -181,14 +213,17 @@ impl Point {
     }
 
     /// Outputs given coordinates sequentially seperated by a space.
-    /// Values will have [`DEFAULT_PRECISION`] fractional decimal digits.
     pub(crate) fn coords_as_txt(coord: &[f64]) -> String {
+        Self::coords_with_dp(coord, config().default_precision())
+    }
+
+    fn coords_with_dp(coord: &[f64], precision: usize) -> String {
         if coord.len() == 2 {
-            format!("{:.2$} {:.2$}", coord[0], coord[1], DEFAULT_PRECISION)
+            format!("{:.2$} {:.2$}", coord[0], coord[1], precision)
         } else {
             format!(
                 "{:.3$} {:.3$} {:.3$}",
-                coord[0], coord[1], coord[2], DEFAULT_PRECISION
+                coord[0], coord[1], coord[2], precision
             )
         }
     }
@@ -255,11 +290,17 @@ impl GTrait for Line {
         self.coord[0].len() == 2
     }
 
-    fn to_wkt(&self) -> String {
+    fn to_wkt_fmt(&self, precision: usize) -> String {
         if self.is_2d() {
-            format!("LINESTRING {}", Self::coords_as_txt(&self.coord))
+            format!(
+                "LINESTRING {}",
+                Self::coords_with_dp(&self.coord, precision)
+            )
         } else {
-            format!("LINESTRING Z {}", Self::coords_as_txt(&self.coord))
+            format!(
+                "LINESTRING Z {}",
+                Self::coords_with_dp(&self.coord, precision)
+            )
         }
     }
 
@@ -292,7 +333,14 @@ impl Line {
     }
 
     pub(crate) fn coords_as_txt(coord: &[Vec<f64>]) -> String {
-        let points: Vec<String> = coord.iter().map(|x| Point::coords_as_txt(x)).collect();
+        Self::coords_with_dp(coord, config().default_precision())
+    }
+
+    fn coords_with_dp(coord: &[Vec<f64>], precision: usize) -> String {
+        let points: Vec<String> = coord
+            .iter()
+            .map(|x| Point::coords_with_dp(x, precision))
+            .collect();
         format!("({})", points.join(", "))
     }
 
@@ -341,11 +389,11 @@ impl GTrait for Polygon {
         self.rings[0][0].len() == 2
     }
 
-    fn to_wkt(&self) -> String {
+    fn to_wkt_fmt(&self, precision: usize) -> String {
         if self.is_2d() {
-            format!("POLYGON {}", Self::coords_as_txt(&self.rings))
+            format!("POLYGON {}", Self::coords_with_dp(&self.rings, precision))
         } else {
-            format!("POLYGON Z {}", Self::coords_as_txt(&self.rings))
+            format!("POLYGON Z {}", Self::coords_with_dp(&self.rings, precision))
         }
     }
 
@@ -372,7 +420,14 @@ impl Polygon {
     }
 
     pub(crate) fn coords_as_txt(rings: &[Vec<Vec<f64>>]) -> String {
-        let rings: Vec<String> = rings.iter().map(|x| Line::coords_as_txt(x)).collect();
+        Self::coords_with_dp(rings, config().default_precision())
+    }
+
+    fn coords_with_dp(rings: &[Vec<Vec<f64>>], precision: usize) -> String {
+        let rings: Vec<String> = rings
+            .iter()
+            .map(|x| Line::coords_with_dp(x, precision))
+            .collect();
         format!("({})", rings.join(", "))
     }
 
@@ -432,11 +487,17 @@ impl GTrait for Points {
         self.points[0].len() == 2
     }
 
-    fn to_wkt(&self) -> String {
+    fn to_wkt_fmt(&self, precision: usize) -> String {
         if self.is_2d() {
-            format!("MULTIPOINT {}", Self::coords_as_txt(&self.points))
+            format!(
+                "MULTIPOINT {}",
+                Self::coords_with_dp(&self.points, precision)
+            )
         } else {
-            format!("MULTIPOINT Z {}", Self::coords_as_txt(&self.points))
+            format!(
+                "MULTIPOINT Z {}",
+                Self::coords_with_dp(&self.points, precision)
+            )
         }
     }
 
@@ -470,7 +531,14 @@ impl Points {
     }
 
     pub(crate) fn coords_as_txt(points: &[Vec<f64>]) -> String {
-        let points: Vec<String> = points.iter().map(|x| Point::coords_as_txt(x)).collect();
+        Self::coords_with_dp(points, config().default_precision())
+    }
+
+    fn coords_with_dp(points: &[Vec<f64>], precision: usize) -> String {
+        let points: Vec<String> = points
+            .iter()
+            .map(|x| Point::coords_with_dp(x, precision))
+            .collect();
         format!("({})", points.join(", "))
     }
 
@@ -500,16 +568,16 @@ impl GTrait for Lines {
         self.lines[0][0].len() == 2
     }
 
-    fn to_wkt(&self) -> String {
+    fn to_wkt_fmt(&self, precision: usize) -> String {
         if self.is_2d() {
             format!(
                 "MULTILINESTRING {}",
-                Self::coords_as_txt(self.lines.as_slice())
+                Self::coords_with_dp(self.lines.as_slice(), precision)
             )
         } else {
             format!(
                 "MULTILINESTRING Z {}",
-                Self::coords_as_txt(self.lines.as_slice())
+                Self::coords_with_dp(self.lines.as_slice(), precision)
             )
         }
     }
@@ -544,9 +612,13 @@ impl Lines {
     }
 
     pub(crate) fn coords_as_txt(lines: &[Vec<Vec<f64>>]) -> String {
+        Self::coords_with_dp(lines, config().default_precision())
+    }
+
+    fn coords_with_dp(lines: &[Vec<Vec<f64>>], precision: usize) -> String {
         let lines: Vec<String> = lines
             .iter()
-            .map(|x| Line::coords_as_txt(x.as_slice()))
+            .map(|x| Line::coords_with_dp(x.as_slice(), precision))
             .collect();
         format!("({})", lines.join(", "))
     }
@@ -583,16 +655,16 @@ impl GTrait for Polygons {
         self.polygons[0][0][0].len() == 2
     }
 
-    fn to_wkt(&self) -> String {
+    fn to_wkt_fmt(&self, precision: usize) -> String {
         if self.is_2d() {
             format!(
                 "MULTIPOLYGON {}",
-                Self::coords_as_txt(self.polygons.as_slice())
+                Self::coords_with_dp(self.polygons.as_slice(), precision)
             )
         } else {
             format!(
                 "MULTIPOLYGON Z {}",
-                Self::coords_as_txt(self.polygons.as_slice())
+                Self::coords_with_dp(self.polygons.as_slice(), precision)
             )
         }
     }
@@ -631,9 +703,13 @@ impl Polygons {
     }
 
     pub(crate) fn coords_as_txt(polygons: &[Vec<Vec<Vec<f64>>>]) -> String {
+        Self::coords_with_dp(polygons, config().default_precision())
+    }
+
+    fn coords_with_dp(polygons: &[Vec<Vec<Vec<f64>>>], precision: usize) -> String {
         let polygons: Vec<String> = polygons
             .iter()
-            .map(|x| Polygon::coords_as_txt(x.as_slice()))
+            .map(|x| Polygon::coords_with_dp(x.as_slice(), precision))
             .collect();
         format!("({})", polygons.join(", "))
     }
@@ -669,17 +745,18 @@ impl GTrait for Geometries {
         }
     }
 
-    fn to_wkt(&self) -> String {
+    fn to_wkt_fmt(&self, precision: usize) -> String {
         let items: Vec<String> = self
             .items
             .iter()
             .map(|x| match x {
-                G::Point(x) => x.to_wkt(),
-                G::Line(x) => x.to_wkt(),
-                G::Polygon(x) => x.to_wkt(),
-                G::Points(x) => x.to_wkt(),
-                G::Lines(x) => x.to_wkt(),
-                G::Polygons(x) => x.to_wkt(),
+                G::Point(x) => x.to_wkt_fmt(precision),
+                G::Line(x) => x.to_wkt_fmt(precision),
+                G::Polygon(x) => x.to_wkt_fmt(precision),
+                G::Points(x) => x.to_wkt_fmt(precision),
+                G::Lines(x) => x.to_wkt_fmt(precision),
+                G::Polygons(x) => x.to_wkt_fmt(precision),
+                G::BBox(x) => x.to_wkt_fmt(precision),
                 _ => panic!("Unexpected geometries item"),
             })
             .collect();
@@ -759,15 +836,23 @@ impl GTrait for BBox {
         self.z_min.is_none()
     }
 
-    // IMPORTANT: BBOX does not have a standard WKT representation. this
-    // function first creates a `geos` equivalent polygon or multi-polygon
-    // Geometry (depending on whether the coordinates cross the antimeridian
-    // or not), then generate the result's WKT.
-    fn to_wkt(&self) -> String {
-        if let Ok(p2d) = self.to_geos_impl() {
-            p2d.to_wkt().unwrap()
+    fn to_wkt_fmt(&self, precision: usize) -> String {
+        if self.z_min.is_none() {
+            format!(
+                "BBOX ({:.4$}, {:.4$}, {:.4$}, {:.4$})",
+                self.w, self.s, self.e, self.n, precision
+            )
         } else {
-            panic!("Unable to convert BBOX to 2D Polygon")
+            format!(
+                "BBOX ({:.6$}, {:.6$}, {:.6$}, {:.6$}, {:.6$}, {:.6$})",
+                self.w,
+                self.s,
+                self.z_min.unwrap(),
+                self.e,
+                self.n,
+                self.z_max.unwrap(),
+                precision
+            )
         }
     }
 
@@ -789,7 +874,6 @@ impl BBox {
     /// [1]: https://docs.ogc.org/is/21-065r2/21-065r2.html#basic-spatial-data-types
     pub(crate) fn from(xy: Vec<f64>) -> Self {
         if xy.len() == 4 {
-            // BBox { w: xy[0], s: xy[1], z_min: None, e: xy[2], n: xy[3], z_max: None }
             BBox {
                 w: ensure_precision(&xy[0]),
                 s: ensure_precision(&xy[1]),
@@ -936,6 +1020,7 @@ mod tests {
     use super::*;
     use crate::{expr::E, text::cql2};
     use approx::assert_relative_eq;
+    use geos::Geom;
     use std::error::Error;
 
     const TOLERANCE: f64 = 1.0E-3;
@@ -1528,7 +1613,8 @@ mod tests {
     #[test]
     // #[tracing_test::traced_test]
     fn test_bbox_precision() -> Result<(), Box<dyn Error>> {
-        const WKT: &str = "POLYGON ((6.043073 50.128052, 6.242751 50.128052, 6.242751 49.902226, 6.043073 49.902226, 6.043073 50.128052))";
+        // const WKT: &str = "POLYGON ((6.043073 50.128052, 6.242751 50.128052, 6.242751 49.902226, 6.043073 49.902226, 6.043073 50.128052))";
+        const WKT: &str = "BBOX (6.043073, 50.128052, 6.242751, 49.902226)";
 
         let bbox_xy = vec![
             6.043073357781111,
@@ -1542,6 +1628,67 @@ mod tests {
         let wkt = bbox.to_wkt();
         // tracing::debug!("wkt = {wkt}");
         assert_eq!(wkt, WKT);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_try_from_wkt() -> Result<(), Box<dyn Error>> {
+        // Test Vector triplet consisting of (a) a test vector input, (b) expected
+        // WKT output, and (c) number of decimal digits in fraction to use.
+        #[rustfmt::skip]
+        const TV: [(&str, &str, usize); 8] = [
+            (
+                "POINT(-46.035560 -7.532500)",
+                "POINT (-46.03556 -7.53250)",
+                5
+            ), (
+                "LINESTRING   (-180 -45,   0 -45)",
+                "LINESTRING (-180.0 -45.0, 0.0 -45.0)", 
+                1
+            ), (
+                r#"POLYGON (
+                    (-180 -90, -90 -90, -90 90, -180 90, -180 -90),
+                    (-120 -50, -100 -50, -100 -40, -120 -40, -120 -50)
+                )"#,
+                "POLYGON ((-180 -90, -90 -90, -90 90, -180 90, -180 -90), (-120 -50, -100 -50, -100 -40, -120 -40, -120 -50))",
+                0
+            ), (
+                "MULTIPOINT ((7.02 49.92), (90 180))",
+                "MULTIPOINT (7.02 49.92, 90.00 180.00)",
+                2
+            ), (
+                "MULTILINESTRING ((-180 -45, 0 -45), (0 45, 180 45))",
+                "MULTILINESTRING ((-180.0 -45.0, 0.0 -45.0), (0.0 45.0, 180.0 45.0))",
+                1
+            ), (
+                r#"MULTIPOLYGON((
+                    (-180 -90, -90 -90, -90 90, -180 90, -180 -90),
+                    (-120 -50, -100 -50, -100 -40, -120 -40, -120 -50)
+                ), (
+                    (0 0, 10 0, 10 10, 0 10, 0 0)
+                ))"#,
+                "MULTIPOLYGON (((-180 -90, -90 -90, -90 90, -180 90, -180 -90), (-120 -50, -100 -50, -100 -40, -120 -40, -120 -50)), ((0 0, 10 0, 10 10, 0 10, 0 0)))",
+                0
+            ), (
+                "GEOMETRYCOLLECTION(POINT(7.02 49.92),POLYGON((0 0, 10 0, 10 10, 0 10, 0 0)))",
+                "GEOMETRYCOLLECTION (POINT (7.0 49.9), POLYGON ((0.0 0.0, 10.0 0.0, 10.0 10.0, 0.0 10.0, 0.0 0.0)))",
+                1
+            ), (
+                "BBOX(51.43,2.54,55.77,6.40)",
+                "BBOX (51.43, 2.54, 55.77, 6.40)",
+                2
+            ),
+        ];
+
+        for (ndx, (wkt, expected, precision)) in TV.iter().enumerate() {
+            if let Ok(g) = G::try_from_wkt(wkt) {
+                let actual = g.to_wkt_fmt(*precision);
+                assert_eq!(actual, *expected);
+            } else {
+                panic!("Failed parsing WKT at index #{ndx}")
+            }
+        }
 
         Ok(())
     }

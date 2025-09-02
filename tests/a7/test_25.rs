@@ -12,7 +12,7 @@
 //!     * S_INTERSECTS({queryable},BBOX(-180,-90,180,90))
 //!     * S_INTERSECTS({queryable},POINT(7.02 49.92))
 //!     * S_INTERSECTS({queryable},POINT(90 180))
-//!     * S_INTERSECTS({queryable},BBOX(-180,-90,-90,90)) 
+//!     * S_INTERSECTS({queryable},BBOX(-180,-90,-90,90))
 //!       AND S_INTERSECTS({queryable},BBOX(90,-90,180,90))
 //! Then:
 //! * assert successful execution of the evaluation for the first two filter
@@ -22,9 +22,9 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{harness, COUNTRIES, PLACES};
+use crate::utils::{COUNTRIES, PLACES, harness};
+use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Q, Resource};
 use std::error::Error;
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Resource, Q};
 use tracing_test::traced_test;
 
 #[rustfmt::skip]
@@ -53,20 +53,23 @@ const PLACES_PREDICATES: [(&str, u32); 3] = [
 fn test_invalid_coordinate() -> Result<(), Box<dyn Error>> {
     const E: &str = "S_INTERSECTS(geom,POINT(90 180))";
 
-    let shared_ctx = Context::new_shared();
-        let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
-        let expr = Expression::try_from_text(E)?;
-        evaluator.setup(expr)?;
+    let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
+    let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
+    let expr = Expression::try_from_text(E)?;
+    evaluator.setup(expr)?;
 
-        let feat = Resource::from([
-            ("fid".into(), Q::try_from(1)?),
-            ("point".into(), Q::try_from_wkt("POINT (12.4533865 41.9032822)")?),
-        ]);
+    let feat = Resource::from([
+        ("fid".into(), Q::try_from(1)?),
+        (
+            "point".into(),
+            Q::try_from_wkt("POINT (12.4533865 41.9032822)")?,
+        ),
+    ]);
 
-        let res = evaluator.evaluate(&feat);
-        assert!(res.is_err());
+    let res = evaluator.evaluate(&feat);
+    assert!(res.is_err());
 
-        Ok(())
+    Ok(())
 }
 
 #[test]

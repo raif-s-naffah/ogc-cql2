@@ -38,7 +38,7 @@ fn test_string() -> Result<(), Box<dyn Error>> {
     const E5: &str = "'foo' > 'foo'";
     const E6: &str = "'foo' < 'foo'";
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
@@ -93,7 +93,7 @@ fn test_number() -> Result<(), Box<dyn Error>> {
     const E5: &str = "3.14 > 3.14";
     const E6: &str = "3.14 < 3.14";
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
@@ -148,7 +148,7 @@ fn test_integer() -> Result<(), Box<dyn Error>> {
     const E5: &str = "1 > 1";
     const E6: &str = "1 < 1";
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
@@ -203,7 +203,7 @@ fn test_boolean() -> Result<(), Box<dyn Error>> {
     const E5: &str = "true > true";
     const E6: &str = "true < true";
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
@@ -258,7 +258,7 @@ fn test_timestamp() -> Result<(), Box<dyn Error>> {
     const E5: &str = "TIMESTAMP('2022-04-14T14:48:46Z') > TIMESTAMP('2022-04-14T14:48:46Z')";
     const E6: &str = "TIMESTAMP('2022-04-14T14:48:46Z') < TIMESTAMP('2022-04-14T14:48:46Z')";
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
@@ -313,7 +313,7 @@ fn test_date() -> Result<(), Box<dyn Error>> {
     const E5: &str = "DATE('2022-04-14') > DATE('2022-04-14')";
     const E6: &str = "DATE('2022-04-14') < DATE('2022-04-14')";
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;

@@ -35,7 +35,7 @@ const E6: &str = "x >= var";
 
 #[test]
 fn test_string() -> Result<(), Box<dyn Error>> {
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
@@ -117,7 +117,7 @@ fn test_string() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_number() -> Result<(), Box<dyn Error>> {
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
@@ -199,7 +199,7 @@ fn test_number() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_integer() -> Result<(), Box<dyn Error>> {
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
@@ -281,7 +281,7 @@ fn test_integer() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_boolean() -> Result<(), Box<dyn Error>> {
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
@@ -365,7 +365,7 @@ fn test_boolean() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_timestamp() -> Result<(), Box<dyn Error>> {
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
@@ -471,7 +471,7 @@ fn test_timestamp() -> Result<(), Box<dyn Error>> {
 
 #[test]
 fn test_date() -> Result<(), Box<dyn Error>> {
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;

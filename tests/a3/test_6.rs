@@ -28,7 +28,7 @@ fn test() -> Result<(), Box<dyn Error>> {
     const E1: &str = r#"this is NOT null"#;
     const E2: &str = r#"this IS Null"#;
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     let expr1 = Expression::try_from_text(E1)?;
     evaluator1.setup(expr1)?;

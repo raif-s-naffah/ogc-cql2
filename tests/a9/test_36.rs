@@ -58,7 +58,7 @@ fn test_e3() -> Result<(), Box<dyn Error>> {
     const E1: &str = "S_CONTAINS(geom,LINESTRING(7 50,10 51))";
     const E2: &str = "S_WITHIN(geom,LINESTRING(7 50,10 51))";
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
     let expr1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
@@ -87,7 +87,7 @@ fn test_e4() -> Result<(), Box<dyn Error>> {
     const E1: &str = "S_CONTAINS(geom,MULTIPOINT((7 50),(10 51)))";
     const E2: &str = "S_WITHIN(geom,MULTIPOINT((7 50),(10 51)))";
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
     let expr1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;

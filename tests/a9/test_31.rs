@@ -25,17 +25,18 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{countries, harness, COUNTRIES};
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, MyError, Outcome, Resource, Q};
-use std::{error::Error};
+use crate::utils::{COUNTRIES, countries, harness};
+use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, MyError, Outcome, Q, Resource};
+use std::error::Error;
 use tracing_test::traced_test;
 
 // Countries CSV data set contains 177 records...
+#[rustfmt::skip]
 const DISJOINT: [(&str, u32); 4] = [
-    ("S_DISJOINT(geom,BBOX(-180,-90,180,90))", 0),
+    ("S_DISJOINT(geom,BBOX(-180,-90,180,90))",                               0),
     ("S_DISJOINT(geom,POLYGON((-180 -90,180 -90,180 90,-180 90,-180 -90)))", 0),
-    ("S_DISJOINT(geom,LINESTRING(7 50, 10 51))", 176),
-    ("S_DISJOINT(geom,POINT(7.02 49.92))", 176),
+    ("S_DISJOINT(geom,LINESTRING(7 50, 10 51))",                           176),
+    ("S_DISJOINT(geom,POINT(7.02 49.92))",                                 176),
 ];
 
 // const _INTERSECTS: [(&str, u32); 4] = [
@@ -51,7 +52,7 @@ fn test_invalid_coordinates() -> Result<(), Box<dyn Error>> {
     const E: &str = r#"S_DISJOINT(geom,POINT(90 180))"#;
 
     let expr = Expression::try_from_text(E)?;
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let mut evaluator = EvaluatorImpl::new(shared_ctx);
     evaluator.setup(expr)?;
 
@@ -78,7 +79,7 @@ fn test_e3_intersect() -> Result<(), Box<dyn Error>> {
     const E1: &str = "S_DISJOINT(geom,LINESTRING(7 50, 10 51))";
     const E2: &str = "S_INTERSECTS(geom,LINESTRING(7 50, 10 51))";
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let expr1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
@@ -106,7 +107,7 @@ fn test_e4_intersect() -> Result<(), Box<dyn Error>> {
     const E1: &str = "S_DISJOINT(geom,POINT(7.02 49.92))";
     const E2: &str = "S_INTERSECTS(geom,POINT(7.02 49.92))";
 
-    let shared_ctx = Context::new_shared();
+    let shared_ctx = Context::new().freeze();
     let expr1 = Expression::try_from_text(E1)?;
     let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;

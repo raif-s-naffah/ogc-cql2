@@ -23,7 +23,7 @@
 //!     * T_OVERLAPS(INTERVAL({queryable1},{queryable2}),INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))
 //!     * T_STARTEDBY(INTERVAL({queryable1},{queryable2}),INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))
 //!     * T_STARTS(INTERVAL({queryable1},{queryable2}),INTERVAL('2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))
-//! 
+//!
 //!     For each pair of queryables {queryable2} and {queryable2} of data type
 //!     Date, evaluate the following filter expressions
 //!     * T_AFTER(INTERVAL({queryable1},{queryable2}),INTERVAL('2021-01-01','2021-12-31'))

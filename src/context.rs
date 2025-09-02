@@ -5,13 +5,12 @@
 //! Expressions evaluation context.
 //!
 
-use crate::{ExtDataType, FnInfo, add_builtins, crs::CRS};
+use crate::{ExtDataType, FnInfo, MyError, add_builtins, crs::CRS};
 use core::fmt;
 use std::{any::Any, collections::HashMap, rc::Rc};
 
 /// A Context object we will be handing to evaluators so they are aware of
 /// external registered _Functions_.
-#[derive(Default)]
 pub struct Context {
     crs: CRS,
     pub(crate) functions: HashMap<String, FnInfo>,
@@ -26,8 +25,15 @@ impl fmt::Debug for Context {
     }
 }
 
+impl Default for Context {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Context {
-    /// Create a new instance w/ no registered functions.
+    /// Create a new instance w/ no registered functions and the globally
+    /// configured implicit CRS.
     pub fn new() -> Self {
         Context {
             crs: CRS::default(),
@@ -35,10 +41,13 @@ impl Context {
         }
     }
 
-    /// Combine creation w/ sharing in one convenience method.
-    pub fn new_shared() -> SharedContext {
-        let default_ctx = Context::default();
-        Rc::new(default_ctx)
+    /// Create a new instance w/ an implicit CRS specified by a given code.
+    /// Use this method to override the global default CRS code configured by
+    /// setting the environment variable `DEFAULT_CRS`.
+    pub fn try_with_crs(crs_code: &str) -> Result<Self, MyError> {
+        let mut result = Self::new();
+        result.crs = CRS::new(crs_code)?;
+        Ok(result)
     }
 
     /// Register a Function (Rust Closure) by name with expected argument(s)
