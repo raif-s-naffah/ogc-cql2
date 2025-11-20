@@ -158,64 +158,115 @@ impl Op {
     pub(crate) fn nullable(&self) -> bool {
         matches!(self, Op::IsNull | Op::IsNotNull)
     }
+
+    #[rustfmt::skip]
+    pub(crate) fn to_sql(&self) -> &str {
+        match self {
+            Op::Plus   => "+",
+            Op::Minus  => "-",
+            Op::Mult   => "*",
+            Op::Div    => "/",
+            Op::IntDiv => "div",
+            Op::Mod    => "%",
+            Op::Exp    => "^",
+
+            Op::Neg => "NOT",
+            Op::Eq  => "==",
+            Op::Neq => "!=",
+            Op::Lt  => "<",
+            Op::Gt  => ">",
+            Op::Lte => "<=",
+            Op::Gte => ">=",
+            Op::And => "AND",
+            Op::Or  => "OR",
+
+            Op::SIntersects => "ST_Intersects",
+            Op::SEquals     => "ST_Equals",
+            Op::SDisjoint   => "ST_Disjoint",
+            Op::STouches    => "ST_Touches",
+            Op::SWithin     => "ST_Within",
+            Op::SOverlaps   => "ST_Overlaps",
+            Op::SCrosses    => "ST_Crosses",
+            Op::SContains   => "ST_Contains",
+
+            Op::IsLike    => "LIKE",
+            Op::IsNotLike => "NOT LIKE",
+            Op::IsBetween    => "BETWEEN",
+            Op::IsNotBetween => "NOT BETWEEN",
+            Op::IsInList    => "IN",
+            Op::IsNotInList => "NOT IN",
+            Op::IsNull    => "IS NULL",
+            Op::IsNotNull => "IS NOT NULL",
+
+            x => unreachable!("Operator {x:?} has NO direct SQL representation")
+        }
+    }
 }
 
+#[rustfmt::skip]
 impl fmt::Display for Op {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Op::Plus => write!(f, "+"),
-            Op::Minus => write!(f, "-"),
-            Op::Mult => write!(f, "*"),
-            Op::Div => write!(f, "/"),
+            Op::Plus   => write!(f, "+"),
+            Op::Minus  => write!(f, "-"),
+            Op::Mult   => write!(f, "*"),
+            Op::Div    => write!(f, "/"),
             Op::IntDiv => write!(f, "div"),
-            Op::Mod => write!(f, "%"),
-            Op::Exp => write!(f, "^"),
+            Op::Mod    => write!(f, "%"),
+            Op::Exp    => write!(f, "^"),
+
             Op::Neg => write!(f, "!"),
-            Op::Eq => write!(f, "=="),
+            Op::Eq  => write!(f, "=="),
             Op::Neq => write!(f, "!="),
-            Op::Lt => write!(f, "<"),
-            Op::Gt => write!(f, ">"),
+            Op::Lt  => write!(f, "<"),
+            Op::Gt  => write!(f, ">"),
             Op::Lte => write!(f, "<="),
             Op::Gte => write!(f, ">="),
+
             Op::And => write!(f, "&&"),
-            Op::Or => write!(f, "||"),
-            Op::CaseI => write!(f, "CASEI"),
+            Op::Or  => write!(f, "||"),
+
+            Op::CaseI   => write!(f, "CASEI"),
             Op::AccentI => write!(f, "ACCENTI"),
+
             Op::SIntersects => write!(f, "S_INTERSECTS"),
-            Op::SEquals => write!(f, "S_EQUALS"),
-            Op::SDisjoint => write!(f, "S_DISJOINT"),
-            Op::STouches => write!(f, "S_TOUCHES"),
-            Op::SWithin => write!(f, "S_WITHIN"),
-            Op::SOverlaps => write!(f, "S_OVERLAPS"),
-            Op::SCrosses => write!(f, "S_CROSSES"),
-            Op::SContains => write!(f, "S_CONTAINS"),
-            Op::TAfter => write!(f, "T_AFTER"),
-            Op::TBefore => write!(f, "T_BEFORE"),
-            Op::TContains => write!(f, "T_CONTAINS"),
-            Op::TDisjoint => write!(f, "T_DISJOINT"),
-            Op::TDuring => write!(f, "T_DURING"),
-            Op::TEquals => write!(f, "T_EQUALS"),
-            Op::TFinishedBy => write!(f, "T_FINISHEDBY"),
-            Op::TFinishes => write!(f, "T_FINISHES"),
-            Op::TIntersects => write!(f, "T_INTERSECTS"),
-            Op::TMeets => write!(f, "T_MEETS"),
-            Op::TMetBy => write!(f, "T_METBY"),
+            Op::SEquals     => write!(f, "S_EQUALS"),
+            Op::SDisjoint   => write!(f, "S_DISJOINT"),
+            Op::STouches    => write!(f, "S_TOUCHES"),
+            Op::SWithin     => write!(f, "S_WITHIN"),
+            Op::SOverlaps   => write!(f, "S_OVERLAPS"),
+            Op::SCrosses    => write!(f, "S_CROSSES"),
+            Op::SContains   => write!(f, "S_CONTAINS"),
+
+            Op::TAfter        => write!(f, "T_AFTER"),
+            Op::TBefore       => write!(f, "T_BEFORE"),
+            Op::TContains     => write!(f, "T_CONTAINS"),
+            Op::TDisjoint     => write!(f, "T_DISJOINT"),
+            Op::TDuring       => write!(f, "T_DURING"),
+            Op::TEquals       => write!(f, "T_EQUALS"),
+            Op::TFinishedBy   => write!(f, "T_FINISHEDBY"),
+            Op::TFinishes     => write!(f, "T_FINISHES"),
+            Op::TIntersects   => write!(f, "T_INTERSECTS"),
+            Op::TMeets        => write!(f, "T_MEETS"),
+            Op::TMetBy        => write!(f, "T_METBY"),
             Op::TOverlappedBy => write!(f, "T_OVERLAPPEDBY"),
-            Op::TOverlaps => write!(f, "T_OVERLAPS"),
-            Op::TStartedBy => write!(f, "T_STARTEDBY"),
-            Op::TStarts => write!(f, "T_STARTS"),
-            Op::AEquals => write!(f, "A_EQUALS"),
-            Op::AContains => write!(f, "A_CONTAINS"),
+            Op::TOverlaps     => write!(f, "T_OVERLAPS"),
+            Op::TStartedBy    => write!(f, "T_STARTEDBY"),
+            Op::TStarts       => write!(f, "T_STARTS"),
+
+            Op::AEquals      => write!(f, "A_EQUALS"),
+            Op::AContains    => write!(f, "A_CONTAINS"),
             Op::AContainedBy => write!(f, "A_CONTAINEDBY"),
-            Op::AOverlaps => write!(f, "A_OVERLAPS"),
-            Op::IsLike => write!(f, "LIKE"),
-            Op::IsNotLike => write!(f, "NOT LIKE"),
-            Op::IsBetween => write!(f, "BETWEEN"),
+            Op::AOverlaps    => write!(f, "A_OVERLAPS"),
+
+            Op::IsLike       => write!(f, "LIKE"),
+            Op::IsNotLike    => write!(f, "NOT LIKE"),
+            Op::IsBetween    => write!(f, "BETWEEN"),
             Op::IsNotBetween => write!(f, "NOT BETWEEN"),
-            Op::IsInList => write!(f, "IN"),
-            Op::IsNotInList => write!(f, "NOT IN"),
-            Op::IsNull => write!(f, "IS NULL"),
-            Op::IsNotNull => write!(f, "IS NOT NULL"),
+            Op::IsInList     => write!(f, "IN"),
+            Op::IsNotInList  => write!(f, "NOT IN"),
+            Op::IsNull       => write!(f, "IS NULL"),
+            Op::IsNotNull    => write!(f, "IS NOT NULL"),
         }
     }
 }

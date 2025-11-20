@@ -12,20 +12,20 @@ use crate::{
     qstring::QString,
 };
 use core::fmt;
-use geos::{Geom, Geometry};
 use jiff::Zoned;
-use std::any::Any;
+use std::{any::Any, mem};
 use tracing::{debug, error};
 
 /// Expression variants...
 #[derive(Clone, Debug, Default, PartialEq)]
 pub(crate) enum E {
     #[default]
-    Unbounded,
+    Null,
 
+    Unbounded,
     Bool(bool),
     Num(f64),
-    Str(String),
+    Str(QString),
     Date(Zoned),
     Timestamp(Zoned),
     Spatial(G),
@@ -40,16 +40,16 @@ pub(crate) enum E {
 impl fmt::Display for E {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            E::Null => write!(f, "NULL"),
             E::Unbounded => write!(f, ".."),
             E::Bool(x) => write!(f, "{}", if *x { "TRUE" } else { "FALSE" }),
             E::Num(x) => write!(f, "{x}"),
             E::Str(x) => write!(f, "'{x}'"),
-            E::Date(x) => write!(f, "{x}"),
-            E::Timestamp(x) => write!(f, "{x}"),
+            E::Date(x) => write!(f, "{}", x.date()),
+            E::Timestamp(x) => write!(f, "{}", x.datetime()),
             E::Spatial(x) => write!(f, "{x}"),
             E::Id(x) => write!(f, "{x}"),
             E::Monadic(op, x) if op.nullable() => write!(f, "{x} {op}"),
-            // E::Monadic(op, x) if op.nullable() => write!(f, "{x}({op})"),
             E::Monadic(op, x) => write!(f, "{op}({x})"),
             E::Dyadic(op, a, b)
                 if matches!(op, Op::IsBetween) || matches!(op, Op::IsNotBetween) =>
@@ -83,24 +83,72 @@ impl fmt::Display for E {
                 let items: Vec<_> = x.iter().map(|x| x.to_string()).collect();
                 write!(f, "[{}]", items.join(", "))
             }
-
-            E::Interval(x, y) => {
-                write!(f, "[{x} .. {y}]")
-            }
+            E::Interval(x, y) => write!(f, "[{x} .. {y}]"),
         }
     }
 }
 
 impl E {
     /// Return TRUE if this is a literal value; FALSE otherwise.
-    fn is_literal(&self) -> bool {
+    pub(crate) fn is_literal(&self) -> bool {
         match self {
-            // E::Bool(_) | E::Num(_) | E::Str(_) | E::Temporal(_) | E::Spatial(_) => true,
             E::Bool(_) | E::Num(_) | E::Str(_) | E::Date(_) | E::Timestamp(_) | E::Spatial(_) => {
                 true
             }
             E::Array(x) => x.iter().all(|y| y.is_literal()),
             _ => false,
+        }
+    }
+
+    // Return TRUE if this is an Identifier; FALSE otherwise.
+    pub(crate) fn is_id(&self) -> bool {
+        matches!(self, E::Id(_))
+    }
+
+    // Return TRUE if it's a literal value or just a property name.
+    pub(crate) fn is_literal_or_id(&self) -> bool {
+        self.is_literal() || self.is_id()
+    }
+
+    // Return TRUE if this is an Interval; FALSE otherwise.
+    pub(crate) fn is_interval(&self) -> bool {
+        matches!(self, E::Interval(_, _))
+    }
+
+    // Return this expression's value as `Some<Q>` if it's indeed a terminal;
+    // `None` otherwise.
+    pub(crate) fn as_literal(&self) -> Option<Q> {
+        match self {
+            E::Null => Some(Q::Null),
+            E::Unbounded => Some(Q::Instant(Bound::None)),
+            E::Bool(x) => Some(Q::Bool(*x)),
+            E::Num(x) => Some(Q::Num(*x)),
+            E::Str(s) => Some(Q::Str(s.to_owned())),
+            E::Date(z) => Some(Q::Instant(Bound::Date(z.to_owned()))),
+            E::Timestamp(z) => Some(Q::Instant(Bound::Timestamp(z.to_owned()))),
+            E::Spatial(g) => Some(Q::Geom(g.to_owned())),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn as_id(&self) -> Option<&str> {
+        match self {
+            E::Id(x) => Some(x),
+            _ => None,
+        }
+    }
+
+    // pub(crate) fn as_interval(&self) -> Option<(&E, &E)> {
+    pub(crate) fn as_interval(&self) -> Option<(E, E)> {
+        match self {
+            E::Interval(x, y) => {
+                let mut xx = *x.clone();
+                let mut yy = *y.clone();
+                let x_ = ::std::mem::take(&mut xx);
+                let y_ = ::std::mem::take(&mut yy);
+                Some((x_, y_))
+            }
+            _ => None,
         }
     }
 
@@ -133,19 +181,19 @@ impl E {
     // [1]: https://docs.ogc.org/is/21-065r2/21-065r2.html
     // #[tracing::instrument(level = "trace", skip(ctx, f), ret)]
     pub(crate) fn eval(&self, ctx: &Context, feature: &Resource) -> Result<Q, MyError> {
-        // tracing::debug!("eval...");
         match self {
+            E::Null => Ok(Q::Null),
             E::Unbounded => Ok(Q::Instant(Bound::None)),
             E::Bool(x) => Ok(Q::Bool(*x)),
             E::Num(x) => Ok(Q::Num(*x)),
-            E::Str(x) => Ok(Q::Str(QString::plain(x))),
+            E::Str(x) => Ok(Q::Str(x.to_owned())),
             E::Date(x) => Ok(Q::Instant(Bound::Date(x.to_owned()))),
             E::Timestamp(x) => Ok(Q::Instant(Bound::Timestamp(x.to_owned()))),
             E::Spatial(x) => {
                 // ensure geometry has valid coordinates w/in the configured
                 // CRS's area-of-use...
                 x.check_coordinates(ctx.crs())?;
-                Ok(Q::Geom(x.to_geos()?))
+                Ok(Q::Geom(x.to_owned()))
             }
             E::Id(x) => match feature.get(x) {
                 Some(y) => Ok(y.clone()),
@@ -327,7 +375,6 @@ impl E {
                                 ));
                             }
                             // y must be a list...
-                            // let list = zy.to_list_unchecked();
                             let list = zy.to_list()?;
                             // ...and every element must be of same-type as x...
                             let ok = list.iter().all(|e| Q::same_type(&zx, e));
@@ -383,7 +430,6 @@ impl E {
                     match op {
                         Op::SIntersects => Ok(Q::Bool(a.intersects(&b)?)),
                         Op::SEquals     => Ok(Q::Bool(a.equals(&b)?)),
-                        // Op::SEquals     => Ok(Q::Bool(a.equals_exact(&b, 1.0_f64.powi(-1 * TryInto::<i32>::try_into(DEFAULT_PRECISION).expect("Failed coercing")))?)),
                         Op::SDisjoint   => Ok(Q::Bool(a.disjoint(&b)?)),
                         Op::STouches    => Ok(Q::Bool(a.touches(&b)?)),
                         Op::SWithin     => Ok(Q::Bool(a.within(&b)?)),
@@ -402,7 +448,8 @@ impl E {
                 if zx.is_null() || zy.is_null() {
                     Ok(Q::Null)
                 } else if op.instant_or_interval() {
-                    self.eval_temporal_fn(op, zx, zy)
+                    let it = eval_temporal_fn(op, zx, zy)?;
+                    Ok(Q::Bool(it))
                 } else {
                     // expect intervals only...
                     let t1 = zx.to_interval()?;
@@ -486,10 +533,8 @@ impl E {
             #[rustfmt::skip]
             E::Dyadic(op, x, y) if op.array() => {
                 let zx = x.eval(ctx, feature)?;
-                // let a = zx.to_list_unchecked();
                 let a = zx.to_list()?;
                 let zy = y.eval(ctx, feature)?;
-                // let b = zy.to_list_unchecked();
                 let b = zy.to_list()?;
                 match op {
                     Op::AEquals      => Ok(Q::Bool(a.eq(&b))),
@@ -504,7 +549,7 @@ impl E {
             E::Dyadic(op, x, y) => Err(MyError::Runtime(
                 format!("Unexpected (D) {op:?} between {x:?} and {y:?}. Abort").into(),
             )),
-            E::Function(x) => self.eval_fn_call(ctx, feature, x),
+            E::Function(x) => Self::eval_fn_call(ctx, feature, x),
             E::Array(x) => {
                 let v: Result<Vec<Q>, MyError> = x.iter().map(|x| x.eval(ctx, feature)).collect();
                 Ok(Q::List(v?))
@@ -538,143 +583,341 @@ impl E {
         }
     }
 
-    // `zx` and `zy` arguments are either instants or intervals
-    fn eval_temporal_fn(&self, op: &Op, zx: Q, zy: Q) -> Result<Q, MyError> {
-        let lhs_is_instant = zx.is_instant();
-        let rhs_is_instant = zy.is_instant();
-        match op {
-            Op::TAfter => {
-                // start of T1 is after end of T2
-                match (lhs_is_instant, rhs_is_instant) {
-                    (true, true) => {
-                        let t1 = zx.to_bound()?;
-                        let t2 = zy.to_bound()?;
-                        Ok(Q::Bool(t1 > t2))
-                    }
-                    (true, false) => {
-                        let t1 = zx.to_bound()?;
-                        let t2 = zy.to_interval()?;
-                        Ok(Q::Bool(t1 > t2.1))
-                    }
-                    (false, true) => {
-                        let t1 = zx.to_interval()?;
-                        let t2 = zy.to_bound()?;
-                        Ok(Q::Bool(t1.0 > t2))
-                    }
-                    (false, false) => {
-                        let t1 = zx.to_interval()?;
-                        let t2 = zy.to_interval()?;
-                        Ok(Q::Bool(t1.0 > t2.1))
+    // partially evaluate expressions and sub-expressions if/when they contain
+    // literals.  for example a construct like `1038290-2*2^0` should be replaced
+    // by a single numeric value `1038288`.
+    pub(crate) fn reduce(e: &mut E) -> Result<Self, MyError> {
+        match e {
+            // expressions consisting of terminal values cannot be reduced...
+            E::Null
+            | E::Unbounded
+            | E::Bool(_)
+            | E::Num(_)
+            | E::Str(_)
+            | E::Date(_)
+            | E::Timestamp(_)
+            | E::Spatial(_)
+            | E::Id(_) => {
+                let it = mem::take(e);
+                Ok(it)
+            }
+            E::Monadic(op, x) => {
+                // start by reducing operand...
+                let v = E::reduce(x)?;
+                // depending on the operator and specific operand type we can reduce...
+                match op {
+                    Op::Minus => match v {
+                        E::Null => Ok(E::Null),
+                        E::Num(x) => Ok(E::Num(-x)),
+                        _ => Ok(E::Monadic(Op::Minus, Box::new(v))),
+                    },
+                    Op::Neg => match v {
+                        E::Null => Ok(E::Null),
+                        E::Bool(x) => Ok(E::Bool(!x)),
+                        _ => Ok(E::Monadic(Op::Neg, Box::new(v))),
+                    },
+                    Op::IsNull => match v {
+                        E::Null => Ok(E::Bool(true)),
+                        _ => Ok(E::Monadic(Op::IsNull, Box::new(v))),
+                    },
+                    Op::IsNotNull => match v {
+                        E::Null => Ok(E::Bool(false)),
+                        _ => Ok(E::Monadic(Op::IsNotNull, Box::new(v))),
+                    },
+                    Op::CaseI => match v {
+                        E::Str(s) => Ok(E::Str(s.and_icase())),
+                        // ignoring case multiple times is superfluous...
+                        E::Monadic(Op::CaseI, z) => Ok(E::Monadic(Op::CaseI, z)),
+                        _ => Ok(E::Monadic(Op::CaseI, Box::new(v))),
+                    },
+                    Op::AccentI => match v {
+                        E::Str(s) => Ok(E::Str(s.and_iaccent())),
+                        // so is ignoring accents...
+                        E::Monadic(Op::AccentI, z) => Ok(E::Monadic(Op::AccentI, z)),
+                        _ => Ok(E::Monadic(Op::AccentI, Box::new(v))),
+                    },
+                    _ => Ok(E::Monadic(op.to_owned(), Box::new(v))),
+                }
+            }
+            E::Dyadic(Op::And, x, y) => {
+                let lhs = E::reduce(x)?;
+                let rhs = E::reduce(y)?;
+                match (&lhs, &rhs) {
+                    // NULL requires special handling...
+                    (E::Null, E::Null) => Ok(E::Null),
+                    (E::Null, E::Bool(true)) => Ok(E::Null),
+                    (E::Null, E::Bool(false)) => Ok(E::Bool(false)),
+                    (E::Bool(true), E::Null) => Ok(E::Null),
+                    (E::Bool(false), E::Null) => Ok(E::Bool(false)),
+
+                    (E::Bool(true), E::Bool(true)) => Ok(E::Bool(true)),
+                    (E::Bool(true), E::Bool(false)) => Ok(E::Bool(false)),
+                    (E::Bool(false), E::Bool(true)) => Ok(E::Bool(false)),
+                    (E::Bool(false), E::Bool(false)) => Ok(E::Bool(false)),
+
+                    _ => Ok(E::Dyadic(Op::And, Box::new(lhs), Box::new(rhs))),
+                }
+            }
+            E::Dyadic(Op::Or, x, y) => {
+                let lhs = E::reduce(x)?;
+                let rhs = E::reduce(y)?;
+                match (&lhs, &rhs) {
+                    // NULL requires special handling...
+                    (E::Null, E::Null) => Ok(E::Null),
+                    (E::Null, E::Bool(true)) => Ok(E::Bool(true)),
+                    (E::Null, E::Bool(false)) => Ok(E::Null),
+                    (E::Bool(true), E::Null) => Ok(E::Bool(true)),
+                    (E::Bool(false), E::Null) => Ok(E::Null),
+
+                    (E::Bool(true), E::Bool(true)) => Ok(E::Bool(true)),
+                    (E::Bool(true), E::Bool(false)) => Ok(E::Bool(true)),
+                    (E::Bool(false), E::Bool(true)) => Ok(E::Bool(true)),
+                    (E::Bool(false), E::Bool(false)) => Ok(E::Bool(false)),
+
+                    _ => Ok(E::Dyadic(Op::Or, Box::new(lhs), Box::new(rhs))),
+                }
+            }
+            E::Dyadic(op, x, y) if op.comparison() => {
+                let lhs = E::reduce(x)?;
+                let rhs = E::reduce(y)?;
+                if matches!(lhs, E::Null) || matches!(rhs, E::Null) {
+                    Ok(E::Null)
+                } else {
+                    // only compare terminals...
+                    let u = lhs.as_literal();
+                    let v = rhs.as_literal();
+                    match (u, v) {
+                        (Some(a), Some(b)) => {
+                            // ...that are similar to each other...
+                            match op {
+                                Op::Eq => Ok(E::Bool(a.eq(&b))),
+                                Op::Neq => Ok(E::Bool(!a.eq(&b))),
+                                Op::Lt => Ok(E::Bool(a.lt(&b))),
+                                Op::Gt => Ok(E::Bool(a.gt(&b))),
+                                Op::Lte => Ok(E::Bool(a.le(&b))),
+                                Op::Gte => Ok(E::Bool(a.ge(&b))),
+                                _ => Ok(E::Dyadic(op.to_owned(), Box::new(lhs), Box::new(rhs))),
+                            }
+                        }
+                        _ => Ok(E::Dyadic(op.to_owned(), Box::new(lhs), Box::new(rhs))),
                     }
                 }
             }
-            Op::TBefore => {
-                // end of T1 is before start of T2
-                match (lhs_is_instant, rhs_is_instant) {
-                    (true, true) => {
-                        let t1 = zx.to_bound()?;
-                        let t2 = zy.to_bound()?;
-                        Ok(Q::Bool(t1 < t2))
-                    }
-                    (true, false) => {
-                        let t1 = zx.to_bound()?;
-                        let t2 = zy.to_interval()?;
-                        Ok(Q::Bool(t1 < t2.0))
-                    }
-                    (false, true) => {
-                        let t1 = zx.to_interval()?;
-                        let t2 = zy.to_bound()?;
-                        Ok(Q::Bool(t1.1 < t2))
-                    }
-                    (false, false) => {
-                        let t1 = zx.to_interval()?;
-                        let t2 = zy.to_interval()?;
-                        Ok(Q::Bool(t1.1 < t2.0))
-                    }
-                }
-            }
-            Op::TDisjoint => {
-                // (t1 T_BEFORE t2) OR (t1 T_AFTER t2)
-                match (lhs_is_instant, rhs_is_instant) {
-                    (true, true) => {
-                        let t1 = zx.to_bound()?;
-                        let t2 = zy.to_bound()?;
-                        Ok(Q::Bool(t1 != t2))
-                    }
-                    (true, false) => {
-                        let t1 = zx.to_bound()?;
-                        let t2 = zy.to_interval()?;
-                        Ok(Q::Bool((t1 < t2.0) || (t1 > t2.1)))
-                    }
-                    (false, true) => {
-                        let t1 = zx.to_interval()?;
-                        let t2 = zy.to_bound()?;
-                        Ok(Q::Bool((t1.1 < t2) || (t1.0 > t2)))
-                    }
-                    (false, false) => {
-                        let t1 = zx.to_interval()?;
-                        let t2 = zy.to_interval()?;
-                        Ok(Q::Bool((t1.1 < t2.0) || (t1.0 > t2.1)))
-                    }
-                }
-            }
-            Op::TEquals => {
-                // Start and end of t1 and t2 are coincident
-                match (lhs_is_instant, rhs_is_instant) {
-                    (true, true) => {
-                        let t1 = zx.to_bound()?;
-                        let t2 = zy.to_bound()?;
-                        Ok(Q::Bool(t1 == t2))
-                    }
-                    (true, false) => {
-                        let t1 = zx.to_bound()?;
-                        let t2 = zy.to_interval()?;
-                        Ok(Q::Bool((t1 == t2.0) && (t1 == t2.1)))
-                    }
-                    (false, true) => {
-                        let t1 = zx.to_interval()?;
-                        let t2 = zy.to_bound()?;
-                        Ok(Q::Bool((t1.0 == t2) && (t1.1 == t2)))
-                    }
-                    (false, false) => {
-                        let t1 = zx.to_interval()?;
-                        let t2 = zy.to_interval()?;
-                        Ok(Q::Bool((t1.0 == t2.0) && (t1.1 == t2.1)))
+            E::Dyadic(op, x, y) if op.xtd_comparison() => {
+                let lhs = E::reduce(x)?;
+                let rhs = E::reduce(y)?;
+                if matches!(lhs, E::Null) || matches!(rhs, E::Null) {
+                    Ok(E::Null)
+                } else {
+                    let u = lhs.as_literal();
+                    let v = rhs.as_literal();
+                    match (u, v) {
+                        (Some(a), Some(b)) => match op {
+                            Op::IsLike | Op::IsNotLike => {
+                                let input = a.to_str()?;
+                                let pattern = b.to_str()?;
+                                if matches!(op, Op::IsLike) {
+                                    Ok(E::Bool(QString::like(&input, &pattern)))
+                                } else {
+                                    Ok(E::Bool(!QString::like(&input, &pattern)))
+                                }
+                            }
+                            Op::IsBetween | Op::IsNotBetween => {
+                                let z = a.to_num()?;
+                                let bounds = b.to_list()?;
+                                let (b0, b1) = (&bounds[0], &bounds[1]);
+                                if b0.is_null() || b1.is_null() {
+                                    Ok(E::Null)
+                                } else {
+                                    let lo = b0.to_num()?;
+                                    let hi = b1.to_num()?;
+                                    let range = if lo <= hi { lo..=hi } else { hi..=lo };
+                                    if matches!(op, Op::IsBetween) {
+                                        Ok(E::Bool(range.contains(&z)))
+                                    } else {
+                                        Ok(E::Bool(!range.contains(&z)))
+                                    }
+                                }
+                            }
+                            Op::IsInList | Op::IsNotInList => {
+                                if a.literal_type().is_none() {
+                                    return Err(MyError::Runtime(
+                                        "[NOT] IN LHS is not a literal value".into(),
+                                    ));
+                                }
+                                let list = b.to_list()?;
+                                let ok = list.iter().all(|e| Q::same_type(&a, e));
+                                if !ok {
+                                    return Err(MyError::Runtime(
+                                        "Incompatible [NOT] IN predicate types".into(),
+                                    ));
+                                }
+                                if matches!(op, Op::IsInList) {
+                                    Ok(E::Bool(a.contained_by(list)?))
+                                } else {
+                                    Ok(E::Bool(!a.contained_by(list)?))
+                                }
+                            }
+                            _ => Ok(E::Dyadic(op.to_owned(), Box::new(lhs), Box::new(rhs))),
+                        },
+                        _ => Ok(E::Dyadic(op.to_owned(), Box::new(lhs), Box::new(rhs))),
                     }
                 }
             }
-            Op::TIntersects => {
-                // NOT (t1 T_DISJOINT t2)
-                match (lhs_is_instant, rhs_is_instant) {
-                    (true, true) => {
-                        let t1 = zx.to_bound()?;
-                        let t2 = zy.to_bound()?;
-                        Ok(Q::Bool(t1 == t2))
-                    }
-                    (true, false) => {
-                        let t1 = zx.to_bound()?;
-                        let t2 = zy.to_interval()?;
-                        Ok(Q::Bool(!((t1 < t2.0) || (t1 > t2.1))))
-                    }
-                    (false, true) => {
-                        let t1 = zx.to_interval()?;
-                        let t2 = zy.to_bound()?;
-                        Ok(Q::Bool(!((t1.1 < t2) || (t1.0 > t2))))
-                    }
-                    (false, false) => {
-                        let t1 = zx.to_interval()?;
-                        let t2 = zy.to_interval()?;
-                        Ok(Q::Bool(!((t1.1 < t2.0) || (t1.0 > t2.1))))
+            E::Dyadic(op, x, y) if op.arithmetic() => {
+                let lhs = E::reduce(x)?;
+                let rhs = E::reduce(y)?;
+                if matches!(lhs, E::Null) || matches!(rhs, E::Null) {
+                    Ok(E::Null)
+                } else {
+                    let u = lhs.as_literal();
+                    let v = rhs.as_literal();
+                    match (u, v) {
+                        (Some(a), Some(b)) => {
+                            let m = a.to_num()?;
+                            let n = b.to_num()?;
+                            match op {
+                                Op::Plus => Ok(E::Num(m + n)),
+                                Op::Minus => Ok(E::Num(m - n)),
+                                Op::Mult => Ok(E::Num(m * n)),
+                                Op::Div => Ok(E::Num(m / n)),
+                                Op::IntDiv => Ok(E::Num(m.rem_euclid(n))),
+                                Op::Mod => Ok(E::Num(m % n)),
+                                Op::Exp => Ok(E::Num(m.powf(n).round())),
+                                _ => Ok(E::Dyadic(op.to_owned(), Box::new(lhs), Box::new(rhs))),
+                            }
+                        }
+                        _ => Ok(E::Dyadic(op.to_owned(), Box::new(lhs), Box::new(rhs))),
                     }
                 }
             }
-            _ => Err(MyError::Runtime(
-                format!("Unexpected temporal operator: {op:?}. Abort").into(),
-            )),
+            E::Dyadic(op, x, y) if op.spatial() => {
+                let lhs = E::reduce(x)?;
+                let rhs = E::reduce(y)?;
+                if matches!(lhs, E::Null) || matches!(rhs, E::Null) {
+                    Ok(E::Null)
+                } else {
+                    let u = lhs.as_literal();
+                    let v = rhs.as_literal();
+                    match (u, v) {
+                        (Some(a), Some(b)) => {
+                            let m = a.to_geom()?;
+                            let n = b.to_geom()?;
+                            match op {
+                                Op::SIntersects => Ok(E::Bool(m.intersects(&n)?)),
+                                Op::SEquals => Ok(E::Bool(m.equals(&n)?)),
+                                Op::SDisjoint => Ok(E::Bool(m.disjoint(&n)?)),
+                                Op::STouches => Ok(E::Bool(m.touches(&n)?)),
+                                Op::SWithin => Ok(E::Bool(m.within(&n)?)),
+                                Op::SOverlaps => Ok(E::Bool(m.overlaps(&n)?)),
+                                Op::SCrosses => Ok(E::Bool(m.crosses(&n)?)),
+                                Op::SContains => Ok(E::Bool(m.contains(&n)?)),
+                                _ => Ok(E::Dyadic(op.to_owned(), Box::new(lhs), Box::new(rhs))),
+                            }
+                        }
+                        _ => Ok(E::Dyadic(op.to_owned(), Box::new(lhs), Box::new(rhs))),
+                    }
+                }
+            }
+            E::Dyadic(op, x, y) if op.temporal() => {
+                let lhs = E::reduce(x)?;
+                let rhs = E::reduce(y)?;
+                if matches!(lhs, E::Null) || matches!(rhs, E::Null) {
+                    Ok(E::Null)
+                } else {
+                    let u = lhs.as_literal();
+                    let v = rhs.as_literal();
+                    match (u, v) {
+                        (Some(a), Some(b)) => {
+                            if a.is_null() || b.is_null() {
+                                Ok(E::Null)
+                            } else if op.instant_or_interval() {
+                                let it = eval_temporal_fn(op, a, b)?;
+                                Ok(E::Bool(it))
+                            } else {
+                                // expect intervals only...
+                                let t1 = a.to_interval()?;
+                                let t2 = b.to_interval()?;
+                                match op {
+                                    Op::TContains => Ok(E::Bool((t1.0 < t2.0) && (t1.1 > t2.1))),
+                                    Op::TDuring => Ok(E::Bool((t1.0 > t2.0) && (t1.1 < t2.1))),
+                                    Op::TFinishedBy => Ok(E::Bool((t1.0 < t2.0) && (t1.1 == t2.1))),
+                                    Op::TFinishes => Ok(E::Bool((t1.0 > t2.0) && (t1.1 == t2.1))),
+                                    Op::TMeets => Ok(E::Bool(t1.1 == t2.0)),
+                                    Op::TMetBy => Ok(E::Bool(t1.0 == t2.1)),
+                                    Op::TOverlappedBy => {
+                                        Ok(E::Bool((t1.0 > t2.0) && (t1.0 < t2.1) && (t1.1 > t2.1)))
+                                    }
+                                    Op::TOverlaps => {
+                                        Ok(E::Bool((t1.0 < t2.0) && (t1.1 > t2.0) && (t1.1 < t2.1)))
+                                    }
+                                    Op::TStartedBy => Ok(E::Bool((t1.0 == t2.0) && (t1.1 > t2.1))),
+                                    Op::TStarts => Ok(E::Bool((t1.0 == t2.0) && (t1.1 < t2.1))),
+                                    _ => Ok(E::Dyadic(op.to_owned(), Box::new(lhs), Box::new(rhs))),
+                                }
+                            }
+                        }
+                        _ => Ok(E::Dyadic(op.to_owned(), Box::new(lhs), Box::new(rhs))),
+                    }
+                }
+            }
+            E::Dyadic(op, x, y) if op.array() => {
+                let lhs = E::reduce(x)?;
+                let rhs = E::reduce(y)?;
+                if matches!(lhs, E::Null) || matches!(rhs, E::Null) {
+                    Ok(E::Null)
+                } else {
+                    let u = lhs.as_literal();
+                    let v = rhs.as_literal();
+                    match (u, v) {
+                        (Some(a), Some(b)) => {
+                            let m = a.to_list()?;
+                            let n = b.to_list()?;
+                            match op {
+                                Op::AEquals => Ok(E::Bool(m.eq(&n))),
+                                Op::AContains => Ok(E::Bool(n.iter().all(|p| m.contains(p)))),
+                                Op::AContainedBy => Ok(E::Bool(m.iter().all(|p| n.contains(p)))),
+                                Op::AOverlaps => {
+                                    Ok(E::Bool(m.iter().zip(n).any(|(i, j)| i.eq(&j))))
+                                }
+                                _ => Ok(E::Dyadic(op.to_owned(), Box::new(lhs), Box::new(rhs))),
+                            }
+                        }
+                        _ => Ok(E::Dyadic(op.to_owned(), Box::new(lhs), Box::new(rhs))),
+                    }
+                }
+            }
+            E::Dyadic(op, x, y) => unreachable!("Unexpected dyadic {op} between {x:?} and {y:?}"),
+            E::Function(x) => {
+                let z_params = mem::take(&mut x.params);
+                let params: Result<Vec<E>, MyError> = z_params
+                    .into_iter()
+                    .map(|mut x| E::reduce(&mut x))
+                    .collect();
+                let call = Call {
+                    name: x.name.to_owned(),
+                    params: params?,
+                };
+                Ok(E::Function(call))
+            }
+            E::Array(x) => {
+                let mut list = vec![];
+                for e in x {
+                    let i = E::reduce(e)?;
+                    list.push(i);
+                }
+                Ok(E::Array(list))
+            }
+            E::Interval(x, y) => {
+                let u = E::reduce(x)?;
+                let v = E::reduce(y)?;
+                let it = E::Interval(Box::new(u), Box::new(v));
+                Ok(it)
+            }
         }
     }
 
-    fn eval_fn_call(&self, ctx: &Context, feature: &Resource, c: &Call) -> Result<Q, MyError> {
+    fn eval_fn_call(ctx: &Context, feature: &Resource, c: &Call) -> Result<Q, MyError> {
         let fname = &c.name;
         if let Some(fn_meta) = ctx.fn_info(fname) {
             // check if number of declared args matches that of call params...
@@ -718,7 +961,7 @@ impl E {
                     ExtDataType::Str => {
                         let result = x
                             .downcast_ref::<String>()
-                            .expect("Expected '{fname}()' to return a string");
+                            .unwrap_or_else(|| panic!("Expected '{fname}()' to return a string"));
                         debug!("Invoking '{fname}()' resulted in {result}");
                         let qs = QString::plain(result);
                         Ok(Q::Str(qs))
@@ -726,21 +969,21 @@ impl E {
                     ExtDataType::Num => {
                         let result = x
                             .downcast_ref::<f64>()
-                            .expect("Expected '{fname}()' to return a float");
+                            .unwrap_or_else(|| panic!("Expected '{fname}()' to return a float"));
                         debug!("Invoking '{fname}()' resulted in {result}");
                         Ok(Q::Num(*result))
                     }
                     ExtDataType::Bool => {
                         let result = x
                             .downcast_ref::<bool>()
-                            .expect("Expected '{fname}()' to return a boolean");
+                            .unwrap_or_else(|| panic!("Expected '{fname}()' to return a boolean"));
                         debug!("Invoking '{fname}()' resulted in {result}");
                         Ok(Q::Bool(*result))
                     }
                     ExtDataType::Timestamp => {
                         let result = x
                             .downcast_ref::<Zoned>()
-                            .expect("Expected '{fname}()' to return a Zoned");
+                            .unwrap_or_else(|| panic!("Expected '{fname}()' to return a Zoned"));
                         debug!("Invoking '{fname}()' resulted in {result}");
                         let b = Bound::Timestamp(result.to_owned());
                         Ok(Q::Instant(b))
@@ -748,15 +991,15 @@ impl E {
                     ExtDataType::Date => {
                         let result = x
                             .downcast_ref::<Zoned>()
-                            .expect("Expected '{fname}()' to return a Zoned");
+                            .unwrap_or_else(|| panic!("Expected '{fname}()' to return a Zoned"));
                         debug!("Invoking '{fname}()' resulted in {result}");
                         let b = Bound::Date(result.to_owned());
                         Ok(Q::Instant(b))
                     }
                     ExtDataType::Geom => {
                         let result = x
-                            .downcast_ref::<Geometry>()
-                            .expect("Expected '{fname}()' to return a Geometry");
+                            .downcast_ref::<G>()
+                            .unwrap_or_else(|| panic!("Expected '{fname}()' to return a Geometry"));
                         debug!("Invoking '{fname}()' resulted in a geometry");
                         Ok(Q::Geom(result.to_owned()))
                     }
@@ -773,17 +1016,9 @@ impl E {
     }
 
     #[cfg(test)]
-    pub(crate) fn as_str(&self) -> Option<&str> {
+    pub(crate) fn as_str(&self) -> Option<&QString> {
         match self {
             E::Str(x) => Some(x),
-            _ => None,
-        }
-    }
-
-    #[cfg(test)]
-    pub(crate) fn as_id(&self) -> Option<&str> {
-        match self {
-            E::Id(x) => Some(x),
             _ => None,
         }
     }
@@ -806,14 +1041,6 @@ impl E {
     }
 
     #[cfg(test)]
-    fn as_identifier(&self) -> Option<&str> {
-        match self {
-            E::Id(x) => Some(x),
-            _ => None,
-        }
-    }
-
-    #[cfg(test)]
     pub(crate) fn as_dyadic(&self) -> Option<(&Op, &E, &E)> {
         match self {
             E::Dyadic(op, a, b) => Some((op, a, b)),
@@ -828,20 +1055,86 @@ impl E {
             _ => None,
         }
     }
+}
 
-    #[cfg(test)]
-    fn as_interval(&self) -> Option<(&E, &E)> {
-        match self {
-            E::Interval(x, y) => Some((x, y)),
-            _ => None,
+// arguments are either intervals, or instants.
+fn eval_temporal_fn(op: &Op, t1: Q, t2: Q) -> Result<bool, MyError> {
+    let (t1_is_instant, t2_is_instant, b0, b1, b2, b3) = unfold_queryables(&t1, &t2)?;
+    match op {
+        // start of T1 is after end of T2
+        Op::TAfter => match (t1_is_instant, t2_is_instant) {
+            (true, true) => Ok(b0 > b2),
+            (true, false) => Ok(b0 > b3),
+            (false, true) => Ok(b0 > b2),
+            (false, false) => Ok(b0 > b3),
+        },
+        // end of T1 is before start of T2
+        Op::TBefore => match (t1_is_instant, t2_is_instant) {
+            (true, true) => Ok(b0 < b2),
+            (true, false) => Ok(b0 < b2),
+            (false, true) => Ok(b1 < b2),
+            (false, false) => Ok(b1 < b2),
+        },
+        // (t1 T_BEFORE t2) OR (t1 T_AFTER t2)
+        Op::TDisjoint => match (t1_is_instant, t2_is_instant) {
+            (true, true) => Ok(b0 != b2),
+            (true, false) => Ok((b0 < b2) || (b0 > b3)),
+            (false, true) => Ok((b1 < b2) || (b0 > b2)),
+            (false, false) => Ok((b1 < b2) || (b0 > b3)),
+        },
+        // Start and end of t1 and t2 coincide
+        Op::TEquals => match (t1_is_instant, t2_is_instant) {
+            (true, true) => Ok(b0 == b2),
+            (true, false) => Ok((b0 == b2) && (b0 == b3)),
+            (false, true) => Ok((b0 == b2) && (b1 == b2)),
+            (false, false) => Ok((b0 == b2) && (b1 == b3)),
+        },
+        // NOT (t1 T_DISJOINT t2)
+        Op::TIntersects => match (t1_is_instant, t2_is_instant) {
+            (true, true) => Ok(b0 == b2),
+            (true, false) => Ok(!((b0 < b2) || (b0 > b3))),
+            (false, true) => Ok(!((b1 < b2) || (b0 > b2))),
+            (false, false) => Ok(!((b1 < b2) || (b0 > b3))),
+        },
+        _ => Err(MyError::Runtime(
+            format!("Unexpected ({op}) temporal operator").into(),
+        )),
+    }
+}
+
+// ensure arguments are temporal operands.  return flags indicating whether
+// they're Instants or Intervals, and their associated start and end Bounds.
+fn unfold_queryables(a: &Q, b: &Q) -> Result<(bool, bool, Bound, Bound, Bound, Bound), MyError> {
+    let a_is_instant = a.is_instant();
+    let b_is_instant = b.is_instant();
+    match (a_is_instant, b_is_instant) {
+        (true, true) => {
+            let t1 = a.to_bound()?;
+            let t2 = b.to_bound()?;
+            Ok((true, true, t1, Bound::None, t2, Bound::None))
+        }
+        (true, false) => {
+            let t1 = a.to_bound()?;
+            let t2 = b.to_interval()?;
+            Ok((true, false, t1, Bound::None, t2.0, t2.1))
+        }
+        (false, true) => {
+            let t1 = a.to_interval()?;
+            let t2 = b.to_bound()?;
+            Ok((false, true, t1.0, t1.1, t2, Bound::None))
+        }
+        (false, false) => {
+            let t1 = a.to_interval()?;
+            let t2 = b.to_interval()?;
+            Ok((false, false, t1.0, t1.1, t2.0, t2.1))
         }
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Call {
-    name: String,
-    params: Vec<E>,
+    pub(crate) name: String,
+    pub(crate) params: Vec<E>,
 }
 
 impl Call {
@@ -857,10 +1150,8 @@ impl Call {
 mod tests {
     use super::*;
     use crate::text::cql2;
-    use tracing_test::traced_test;
 
     #[test]
-    #[traced_test]
     fn test_ex57() {
         const CQL: &str = r#"T_DURING(INTERVAL(starts_at, ends_at), INTERVAL('2005-01-10', '2010-02-10'))
         "#;
@@ -868,7 +1159,6 @@ mod tests {
         const D2: &str = "2010-02-10";
 
         let exp = cql2::expression(CQL);
-        // tracing::debug!("exp = {exp:?}");
         assert!(exp.is_ok());
 
         let binding = exp.unwrap();
@@ -888,12 +1178,10 @@ mod tests {
     }
 
     #[test]
-    #[traced_test]
     fn test_c7_02() {
         const CQL: &str = r#"depth BETWEEN 100.0 and 150.0"#;
 
         let exp = cql2::expression(CQL);
-        // tracing::debug!("exp = {exp:?}");
         assert!(exp.is_ok());
 
         let binding = exp.unwrap();
@@ -902,7 +1190,7 @@ mod tests {
 
         // a is an identifier...
         assert!(matches!(a, E::Id(_)));
-        assert_eq!(a.as_identifier().expect("Not an ID"), "depth");
+        assert_eq!(a.as_id().expect("Not an ID"), "depth");
 
         // b is a list of 2 numbers...
         assert!(matches!(b, E::Array(_)));
@@ -914,14 +1202,12 @@ mod tests {
     }
 
     #[test]
-    #[traced_test]
     fn test_ex06a() {
         const CQL: &str = r#"    eo:cloud_cover BETWEEN 0.1 AND 0.2
 AND landsat:wrs_row=28
 AND landsat:wrs_path=203
 "#;
         let exp = cql2::expression(CQL);
-        // tracing::debug!("exp = {exp:?}");
         assert!(exp.is_ok());
     }
 }

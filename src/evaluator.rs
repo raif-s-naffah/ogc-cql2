@@ -5,12 +5,12 @@
 //! OGC CQL2 evaluator trait and implementations...
 //!
 
-use crate::{E, Expression, MyError, Outcome, Q, Resource, SharedContext, text::cql2::expression};
-use geos::Geom;
+use crate::{
+    E, Expression, GTrait, MyError, Outcome, Q, Resource, SharedContext, text::cql2::expression,
+};
 use tracing::{debug, error};
 
-/// Trait to be implmented by concrete evaluators of OGC CQL2 expressions
-/// both text- and json-encoded.
+/// Capability of processing OGC CQL2 expressions, both text- and json-encoded.
 pub trait Evaluator {
     /// Setup an instance to operate with a given [Expression].
     fn setup(&mut self, expr: Expression) -> Result<(), MyError>;
@@ -18,21 +18,20 @@ pub trait Evaluator {
     /// Evaluate a given [Resource] returning an [Outcome], or raise a
     /// [MyError] if an unexpected error occurs in the process.
     fn evaluate(&self, f: &Resource) -> Result<Outcome, MyError>;
-
-    /// Tears down this instance, releasing + dropping any resources used.
-    fn teardown(&mut self) -> Result<(), MyError>;
 }
 
-/// An example of a concrete evaluator.
+/// A concrete evaluator that does the work w/o relying on any external source
+/// or capability that may be available in high-level data sources such as a
+/// database engine endowed w/ spatial and other operators.
 #[derive(Debug)]
-pub struct EvaluatorImpl {
+pub struct ExEvaluator {
     /// Runtime context w/in which [Resource]s will be evaluated.
     shared_ctx: SharedContext,
     /// Valid/parsed OGC CQL2 expression.
     exp: E,
 }
 
-impl EvaluatorImpl {
+impl ExEvaluator {
     /// Create a new instance using the given [SharedContext].
     pub fn new(ctx: SharedContext) -> Self {
         Self {
@@ -42,11 +41,10 @@ impl EvaluatorImpl {
     }
 }
 
-impl Evaluator for EvaluatorImpl {
+impl Evaluator for ExEvaluator {
     fn setup(&mut self, input: Expression) -> Result<(), MyError> {
-        tracing::trace!("setup({input}, ...)");
         // if we're JSON-encoded, convert to Text-encoded.
-        let exp = match input {
+        let mut exp = match input {
             Expression::Text(text) => text.0,
             Expression::Json(json) => {
                 // attempt parsing the to_string() output of inner object...
@@ -55,8 +53,9 @@ impl Evaluator for EvaluatorImpl {
                 expression(&text).map_err(MyError::Text)?
             }
         };
-
-        self.exp = exp;
+        let it = E::reduce(&mut exp)?;
+        tracing::trace!("setup (redux): {it}");
+        self.exp = it;
         Ok(())
     }
 
@@ -81,10 +80,7 @@ impl Evaluator for EvaluatorImpl {
                 Ok(Outcome::N)
             }
             Q::Geom(x) => {
-                error!(
-                    "Unexpected geometry: {}",
-                    x.to_wkt().expect("Failed generating WKT")
-                );
+                error!("Unexpected geometry: {}", x.to_wkt());
                 Ok(Outcome::N)
             }
             Q::Instant(x) => {
@@ -100,10 +96,5 @@ impl Evaluator for EvaluatorImpl {
                 Ok(Outcome::N)
             }
         }
-    }
-
-    fn teardown(&mut self) -> Result<(), MyError> {
-        tracing::trace!("teardown()");
-        Ok(())
     }
 }

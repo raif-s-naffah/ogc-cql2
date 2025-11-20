@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Validate that CQL2 JSON is supported by the server
-//! 
+//!
 //! Given:
 //!     * A filter expression
 //! When:
@@ -11,7 +11,7 @@
 //!     JSON representation.
 //! Then:
 //! * assert the validation is successful.
-//! 
+//!
 
 use crate::grammar;
 use std::error::Error;

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! A.9. Conformance Class "Spatial Functions"
-//! 
+//!
 //! https://docs.ogc.org/is/21-065r2/21-065r2.html#_conformance_class_spatial_functions
-//! 
+//!
 
 mod test_30;
 mod test_31;

@@ -12,7 +12,7 @@
 //! * assert successful execution of the evaluation.
 //!
 
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
+use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use std::error::Error;
 
 #[test]
@@ -22,7 +22,7 @@ fn test() -> Result<(), Box<dyn Error>> {
     let shared_ctx = ctx.freeze();
 
     let expr = Expression::try_from_text("min(a, b) + max(a, b) = 2 * avg(a, b)")?;
-    let mut eval = EvaluatorImpl::new(shared_ctx);
+    let mut eval = ExEvaluator::new(shared_ctx);
     eval.setup(expr)?;
 
     let feat = Resource::from([

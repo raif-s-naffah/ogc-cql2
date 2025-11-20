@@ -28,11 +28,11 @@ Because the _Conformance Tests_ expect `EPSG:4326` to be indeed the implicit CRS
 ## `DEFAULT_PRECISION`
 By _Precision_ I mean the number of digits after the decimal point.
 
-This environment variable controls 2 things: (a) the _precision_ to keep when ingesting geometry coordinates, and (b) the _precision_ to use when rendering geometry WKT output using the `to_wkt()` generic method.
+This environment variable controls 3 things: (a) the _precision_ to keep when ingesting geometry coordinates, (b) the _precision_ to use when rendering geometry WKT output using the `to_wkt()` generic method, and (c) the _Precision_ to use when invoking certain spatial _ST_ functions such as `ST_Within` and others.
 
-The default value of `6` ensures that coordinates in _WGS 84_ (which is the default implicit CRS) are compared w/ an accuracy of `11.1` cm.
+The default value of `7` ensures that coordinates in _WGS 84_ (which is the default implicit CRS) are compared w/ an accuracy of `1.11` cm.
 
-For now only integers greater than or equal to `0` and less than `8` are allowed.
+For now only integers greater than or equal to `0` and less than or equal to `32` are allowed.
 
 The `GTrait` made public since vesion 0.2.0 and implemented for all geometry variants allows for fine-tuning the WKT output by offering the following method...
 

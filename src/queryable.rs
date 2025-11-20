@@ -10,16 +10,40 @@
 //!
 
 use crate::{
-    DataType, MyError,
+    MyError,
     bound::Bound,
     geom::{G, GTrait},
     qstring::QString,
 };
 use core::fmt;
-use geos::{Geom, Geometry};
 use jiff::{Timestamp, Zoned, civil::Date, tz::TimeZone};
 use std::{cmp::Ordering, mem};
 use tracing::error;
+
+/// [Queryable][Q] type variants.
+#[derive(Debug)]
+pub enum DataType {
+    /// A Unicode UTF-8 string.
+    Str,
+    /// A numeric value including integers and floating points.
+    Num,
+    /// A boolean value.
+    Bool,
+    /// An _Instant_ with a granularity of a second or smaller. Timestamps are
+    /// always in the time zone UTC ("Z").
+    Timestamp,
+    /// An _Instant_ with a granularity of a day. Dates are local without an
+    /// associated time zone.
+    Date,
+    /// A temporal range of 2 _Instants_ each either _fixed_ or _unbounded_.
+    #[allow(dead_code)]
+    Interval,
+    /// A spatial (geometry) value.
+    Geom,
+    /// A collection of homogeneous values.
+    #[allow(dead_code)]
+    List,
+}
 
 /// A Resource queryable property possible concrete value variants.
 #[derive(Clone)]
@@ -34,7 +58,7 @@ pub enum Q {
     /// comparisons, should be used ignoring its case and/or accent(s).
     Str(QString),
     /// A known geometry (spatial) instance.
-    Geom(Geometry),
+    Geom(G),
     /// Either a known temporal instant or an unbounded value.
     Instant(Bound),
     /// A temporal interval.
@@ -50,7 +74,7 @@ impl fmt::Debug for Q {
             Self::Bool(arg0) => f.debug_tuple("Bool").field(arg0).finish(),
             Self::Num(arg0) => f.debug_tuple("Num").field(arg0).finish(),
             Self::Str(arg0) => f.debug_tuple("Str").field(arg0).finish(),
-            Self::Geom(x) => write!(f, "Geom({})", x.to_wkt().expect("Failed generating WKT")),
+            Self::Geom(x) => write!(f, "Geom({})", x.to_wkt()),
             Self::Instant(arg0) => f.debug_tuple("Instant").field(arg0).finish(),
             Self::Interval(arg0, arg1) => {
                 f.debug_tuple("Interval").field(arg0).field(arg1).finish()
@@ -108,7 +132,7 @@ impl fmt::Display for Q {
             Q::Bool(x) => write!(f, "{x}"),
             Q::Num(x) => write!(f, "{x}"),
             Q::Str(x) => write!(f, "{x}"),
-            Q::Geom(x) => write!(f, "{}", x.to_wkt().expect("Failed generating WKT")),
+            Q::Geom(x) => write!(f, "{}", x.to_wkt()),
             Q::Instant(x) => write!(f, "{x}"),
             Q::Interval(Bound::None, Bound::None) => write!(f, "[...]"),
             Q::Interval(Bound::None, y) => write!(f, "[..{y}]"),
@@ -164,9 +188,14 @@ impl Q {
 
     /// Try creating a new instance from a Well Known Text encoded geometry.
     pub fn try_from_wkt(value: &str) -> Result<Self, MyError> {
-        let g = G::try_from_wkt(value)?;
-        let g_geos = g.to_geos()?;
-        Ok(Q::from(g_geos))
+        let g = G::try_from(value)?;
+        Ok(Q::Geom(g))
+    }
+
+    /// Try creating a new instance from a Well Known Binary encoded geometry.
+    pub fn try_from_wkb(value: &[u8]) -> Result<Self, MyError> {
+        let g = G::try_from(value)?;
+        Ok(Q::Geom(g))
     }
 
     /// Return TRUE if this is `Null`; FALSE otherwise.
@@ -179,39 +208,40 @@ impl Q {
         matches!(self, Q::Instant(_))
     }
 
-    pub(crate) fn to_bool(&self) -> Result<bool, MyError> {
+    /// Return the current value of this if it's a boolean value.
+    pub fn to_bool(&self) -> Result<bool, MyError> {
         match self {
             Q::Bool(x) => Ok(*x),
             _ => Err(MyError::Runtime(format!("{self} is not a boolean").into())),
         }
     }
 
-    pub(crate) fn to_str(&self) -> Result<QString, MyError> {
+    /// Return the current value of this if it's a [string][QString] value.
+    pub fn to_str(&self) -> Result<QString, MyError> {
         match self {
             Q::Str(x) => Ok(x.to_owned()),
             _ => Err(MyError::Runtime(format!("{self} is not a string").into())),
         }
     }
 
-    pub(crate) fn to_num(&self) -> Result<f64, MyError> {
+    /// Return the current value of this if it's a number value.
+    pub fn to_num(&self) -> Result<f64, MyError> {
         match self {
             Q::Num(x) => Ok(*x),
             _ => Err(MyError::Runtime(format!("{self} is not a number").into())),
         }
     }
 
-    pub(crate) fn to_geom(&self) -> Result<Geometry, MyError> {
-        let mut g = match self {
-            Q::Geom(x) => x.to_owned(),
-            _ => return Err(MyError::Runtime(format!("{self} is not a geometry").into())),
-        };
-        match g.normalize() {
-            Ok(_) => Ok(g),
-            Err(x) => Err(MyError::Runtime(format!("Failed normalizing: {x}").into())),
+    /// Return the current value of this if it's a [Geometry][G] value.
+    pub fn to_geom(&self) -> Result<G, MyError> {
+        match self {
+            Q::Geom(x) => Ok(x.to_owned()),
+            _ => Err(MyError::Runtime(format!("{self} is not a geometry").into())),
         }
     }
 
-    pub(crate) fn to_bound(&self) -> Result<Bound, MyError> {
+    /// Return the current value of this if it's a [Bound] value.
+    pub fn to_bound(&self) -> Result<Bound, MyError> {
         match self {
             Q::Instant(x) => Ok(x.to_owned()),
             _ => Err(MyError::Runtime(
@@ -220,7 +250,9 @@ impl Q {
         }
     }
 
-    pub(crate) fn to_interval(&self) -> Result<(Bound, Bound), MyError> {
+    /// Return the current value of this if it's a _Interval_ value as a pair
+    /// of [Bound]s.
+    pub fn to_interval(&self) -> Result<(Bound, Bound), MyError> {
         match self {
             Q::Interval(x, y) => Ok((x.to_owned(), y.to_owned())),
             _ => Err(MyError::Runtime(
@@ -229,7 +261,8 @@ impl Q {
         }
     }
 
-    pub(crate) fn to_list(&self) -> Result<Vec<Q>, MyError> {
+    /// Return the current value of this if it's a collection.
+    pub fn to_list(&self) -> Result<Vec<Q>, MyError> {
         match self {
             Q::List(x) => Ok(x.to_owned()),
             _ => Err(MyError::Runtime(format!("{self} is not a list").into())),
@@ -258,7 +291,6 @@ impl Q {
         }
     }
 
-    // pub(crate) fn contained_by(&self, list: Vec<Self>) -> bool {
     pub(crate) fn contained_by(&self, list: Vec<Self>) -> Result<bool, MyError> {
         if list.is_empty() {
             return Ok(false);
@@ -290,8 +322,7 @@ impl Q {
                 Ok(rhs.contains(&lhs))
             } else if matches!(z_type, DataType::Geom) {
                 let lhs = self.to_geom()?;
-                let rhs: Result<Vec<Geometry>, MyError> =
-                    list.iter().map(|e| e.to_geom()).collect();
+                let rhs: Result<Vec<G>, MyError> = list.iter().map(|e| e.to_geom()).collect();
                 let rhs = rhs?;
                 Ok(rhs.contains(&lhs))
             } else {
@@ -425,12 +456,6 @@ impl_try_from_int!(
 impl From<f64> for Q {
     fn from(value: f64) -> Self {
         Q::Num(value)
-    }
-}
-
-impl From<Geometry> for Q {
-    fn from(value: Geometry) -> Self {
-        Q::Geom(value)
     }
 }
 
@@ -579,7 +604,6 @@ mod tests {
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn fuzz_test_i64() {
         const LIMIT: i64 = (1 << 53) - 1;
 
@@ -606,12 +630,10 @@ mod tests {
             }
         }
 
-        // tracing::debug!("Expected {expected} errors. Found {actual}");
         assert_eq!(expected, actual)
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn fuzz_test_u64() {
         const LIMIT: u64 = (1 << 53) - 1;
 
@@ -638,12 +660,11 @@ mod tests {
             }
         }
 
-        // tracing::debug!("Expected {expected} errors. Found {actual}");
         assert_eq!(expected, actual)
     }
 
     #[test]
-    // #[tracing_test::traced_test]
+    #[tracing_test::traced_test]
     fn test_like() {
         // plain input and pattern.  no wildcards...
         let input = QString::plain("hello");

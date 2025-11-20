@@ -22,14 +22,16 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{COUNTRIES, PLACES, harness};
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Q, Resource};
+use crate::utils::{
+    CountryCSV, CountryGPkg, PlaceCSV, PlaceGPkg, harness, harness_gpkg, harness_sql,
+};
+use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Q, Resource};
 use std::error::Error;
 use tracing_test::traced_test;
 
 #[rustfmt::skip]
 const COUNTRIES_PREDICATES: [(&str, u32); 3] = [
-    // should match all records in the CSV test data set...
+    // should match all records in the test data set...
     (r#"S_INTERSECTS(geom,BBOX(-180,-90,180,90))"#, 177),
     // coordinates of a point in Germany...
     (r#"S_INTERSECTS(geom,POINT(7.02 49.92))"#,       1),
@@ -54,7 +56,7 @@ fn test_invalid_coordinate() -> Result<(), Box<dyn Error>> {
     const E: &str = "S_INTERSECTS(geom,POINT(90 180))";
 
     let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator = ExEvaluator::new(shared_ctx.clone());
     let expr = Expression::try_from_text(E)?;
     evaluator.setup(expr)?;
 
@@ -75,11 +77,37 @@ fn test_invalid_coordinate() -> Result<(), Box<dyn Error>> {
 #[test]
 #[traced_test]
 fn test_countries() -> Result<(), Box<dyn Error>> {
-    harness(COUNTRIES, COUNTRIES_PREDICATES.to_vec())
+    let ds = CountryCSV::new();
+    harness(ds, &COUNTRIES_PREDICATES)
+}
+
+#[tokio::test]
+async fn test_countries_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = CountryGPkg::new().await?;
+    harness_gpkg(ds, &COUNTRIES_PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_countries_sql() -> Result<(), Box<dyn Error>> {
+    let ds = CountryGPkg::new().await?;
+    harness_sql(ds, &COUNTRIES_PREDICATES).await
 }
 
 #[test]
 #[traced_test]
 fn test_places() -> Result<(), Box<dyn Error>> {
-    harness(PLACES, PLACES_PREDICATES.to_vec())
+    let ds = PlaceCSV::new();
+    harness(ds, &PLACES_PREDICATES)
+}
+
+#[tokio::test]
+async fn test_places_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceGPkg::new().await?;
+    harness_gpkg(ds, &PLACES_PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_places_sql() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceGPkg::new().await?;
+    harness_sql(ds, &PLACES_PREDICATES).await
 }

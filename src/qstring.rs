@@ -14,10 +14,10 @@ use unicode_normalization::{UnicodeNormalization, char::is_combining_mark};
 /// Flags to indicate how to handle a given literal string; i.e. whether to
 /// ignore its case, its accents, ignore both, or use as is.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-struct Ignoring(u8);
+pub(crate) struct Ignoring(u8);
 
 impl Ignoring {
-    const NOTHING: Self = Self(0);
+    const NEITHER: Self = Self(0);
     const CASE: Self = Self(1);
     const ACCENT: Self = Self(2);
 }
@@ -25,7 +25,7 @@ impl Ignoring {
 impl fmt::Display for Ignoring {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            Ignoring::NOTHING => write!(f, "/_"),
+            Ignoring::NEITHER => write!(f, "/_"),
             Ignoring::CASE => write!(f, "/c"),
             Ignoring::ACCENT => write!(f, "/a"),
             _ => write!(f, "/b"),
@@ -88,10 +88,10 @@ impl Eq for QString {}
 
 impl QString {
     /// Constructor for a plain instance.
-    pub fn plain(s: &str) -> Self {
+    pub fn plain<S: Into<String>>(s: S) -> Self {
         Self {
-            inner: s.to_owned(),
-            flags: Ignoring::NOTHING,
+            inner: s.into(),
+            flags: Ignoring::NEITHER,
         }
     }
 
@@ -129,18 +129,36 @@ impl QString {
         result
     }
 
+    /// Return a this [`Ignoring`] flags as a byte.
+    pub(crate) fn flags(&self) -> u8 {
+        self.flags.0
+    }
+
+    /// Return a reference to this `inner` string.
+    pub(crate) fn inner(&self) -> &str {
+        &self.inner
+    }
+
+    /// Return TRUE if this is a plain string; FALSE otherwise.
+    #[allow(dead_code)]
+    pub(crate) fn is_plain(&self) -> bool {
+        self.flags.0 == 0
+    }
+
     /// Return TRUE if this is a case-insensitive string; FALSE otherwise.
-    fn is_icase(&self) -> bool {
+    pub(crate) fn is_icase(&self) -> bool {
         self.flags.0 % 2 == 1
     }
 
     /// Return TRUE if this is an accent-insensitive string; FALSE otherwise.
-    fn is_iaccent(&self) -> bool {
+    pub(crate) fn is_iaccent(&self) -> bool {
         self.flags.0 >= 2
     }
 
-    /// Whether `input` is matches the LIKE `pattern`.
+    /// Whether `input` matches the LIKE `pattern`.
     pub(crate) fn like(input: &Self, pattern: &Self) -> bool {
+        const WC: char = '%';
+
         // recursively compare 2 sub-strings, 1 char at a time...
         fn recursive(input: &[char], pattern: &[char]) -> bool {
             // w/ an empty pattern, only empty input matches...
@@ -169,6 +187,32 @@ impl QString {
             (input[0] == pattern[0]) && recursive(&input[1..], &pattern[1..])
         }
 
+        // reduce multiple occurences of unescaped wildcards (uwc) to just one.
+        fn reduce_wildcards(pattern: &str) -> Vec<char> {
+            let mut result: Vec<char> = Vec::with_capacity(pattern.len());
+            let mut chars = pattern.chars();
+            let mut saw_uwc = false;
+            while let Some(c) = chars.next() {
+                let state = if c == '\\' {
+                    result.push('\\');
+                    if let Some(n) = chars.next() {
+                        result.push(n);
+                    }
+                    false
+                } else if c == WC {
+                    if !saw_uwc {
+                        result.push(WC);
+                    }
+                    true
+                } else {
+                    result.push(c);
+                    false
+                };
+                saw_uwc = state;
+            }
+            result
+        }
+
         // case-insensitive mode kicks in when either arguments is unicase.
         let input_icase = input.is_icase();
         let pattern_icase = pattern.is_icase();
@@ -179,50 +223,32 @@ impl QString {
         let iaccent = input_iaccent || pattern_iaccent;
 
         let folded_input: Vec<char> = match (icase, iaccent) {
-            (true, true) => {
-                // compare ignoring case + accent...
-                UniCase::unicode(QString::unaccent(&input.inner))
-                    .to_folded_case()
-                    .chars()
-                    .collect()
-            }
-            (true, false) => {
-                // compare ignoring case only...
-                UniCase::unicode(input.inner.as_str())
-                    .to_folded_case()
-                    .chars()
-                    .collect()
-            }
-            (false, true) => {
-                // compare ignoring accents only...
-                QString::unaccent(&input.inner).as_str().chars().collect()
-            }
-            (false, false) => {
-                // plain strings all the way...
-                input.inner.chars().collect()
-            }
-        };
-
-        let folded_pattern: Vec<char> = match (icase, iaccent) {
-            (true, true) => UniCase::unicode(QString::unaccent(&pattern.inner))
+            (true, true) => UniCase::unicode(QString::unaccent(&input.inner))
                 .to_folded_case()
                 .chars()
                 .collect(),
-            (true, false) => UniCase::unicode(&pattern.inner)
+            (true, false) => UniCase::unicode(input.inner.as_str())
                 .to_folded_case()
                 .chars()
                 .collect(),
-            (false, true) => QString::unaccent(&pattern.inner).chars().collect(),
-            (false, false) => pattern.inner.as_str().chars().collect(),
+            (false, true) => QString::unaccent(&input.inner).as_str().chars().collect(),
+            (false, false) => input.inner.chars().collect(),
         };
 
-        recursive(&folded_input, &folded_pattern)
-    }
+        let binding1 = UniCase::unicode(QString::unaccent(&pattern.inner)).to_folded_case();
+        let binding2 = UniCase::unicode(&pattern.inner).to_folded_case();
+        let binding3 = QString::unaccent(&pattern.inner);
+        let folded_pattern = match (icase, iaccent) {
+            (true, true) => binding1.as_str(),
+            (true, false) => binding2.as_str(),
+            (false, true) => binding3.as_str(),
+            (false, false) => pattern.inner.as_str(),
+        };
 
-    /// Return TRUE if this is a plain string; FALSE otherwise.
-    #[cfg(test)]
-    fn is_plain(&self) -> bool {
-        self.flags.0 == 0
+        // replace repeated wildcards w/ one. mind escaped instances.
+        let reduced_pattern = reduce_wildcards(folded_pattern);
+
+        recursive(&folded_input, &reduced_pattern)
     }
 
     /// Constructor for an accent-insensitive instance.
@@ -247,10 +273,16 @@ impl QString {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::{Rng, distr::Alphanumeric};
+    use rand::{
+        Rng,
+        distr::{
+            Alphanumeric,
+            uniform::{UniformChar, UniformSampler},
+        },
+    };
+    use tracing::debug;
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_display() {
         const S1: &str = "/chișinău/_";
         const S2: &str = "/CHIȘINĂU/c";
@@ -281,7 +313,6 @@ mod tests {
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_equality() {
         let s1 = QString::plain("chisinau");
         let s2 = QString::icase("CHISINAU");
@@ -311,17 +342,16 @@ mod tests {
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_unaccent() {
         let slo = "chisinau";
         let shi = "CHISINAU";
+        let aaaa = ["ẵ", "aͣ", "ą", "ǟ", "aₐ", "ắ"];
+        let nota = ["ɑ", "Ⓐ", "ⓐ", "æ", "ǽ", "ⱥ", "ᶏ", "ₐ"];
 
         let iaccented = QString::unaccent("chișinău");
-        // tracing::debug!("iaccented = '{iaccented}'");
         assert_eq!(iaccented, slo);
 
         let iaccented = QString::unaccent("CHIȘINĂU");
-        // tracing::debug!("iaccented = '{iaccented}'");
         assert_eq!(iaccented, shi);
 
         // now test when LIKE wildcard characters are included...
@@ -341,19 +371,29 @@ mod tests {
         let b = UniCase::new(QString::unaccent("chișinău%")).to_folded_case();
         tracing::debug!("b = '{b}'");
         assert_eq!(a, b);
+
+        // test 'a' combos...
+        for c in aaaa.into_iter() {
+            let a = QString::unaccent(c);
+            assert!(a.starts_with('a'));
+        }
+        for c in nota.into_iter() {
+            let a = QString::unaccent(c);
+            assert!(!a.starts_with('a'));
+        }
     }
 
     fn starts_with_foo() -> String {
-        let size: usize = rand::rng().random_range(5..15);
+        let mut rng = rand::rng();
+        let size: usize = rng.random_range(5..15);
         let s = (0..size)
-            .map(|_| rand::rng().sample(Alphanumeric) as char)
+            .map(|_| rng.sample(Alphanumeric) as char)
             .collect();
-        let hit = rand::rng().random_bool(0.25);
+        let hit = rng.random_bool(0.25);
         if hit { format!("Foo{s}") } else { s }
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_like_small() {
         let pattern = QString::icase("foo%");
         for _ in 0..1000 {
@@ -370,7 +410,6 @@ mod tests {
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_like_capital() {
         let pattern = QString::icase("FOO%");
         for _ in 0..1000 {
@@ -398,5 +437,40 @@ mod tests {
         assert_eq!(r1, "αbc");
 
         assert_eq!(QString::unaccent(S), r1);
+    }
+
+    #[test]
+    #[tracing_test::traced_test]
+    fn test_like_bench() {
+        // generate random word, 5 to 10 characters long from latin characters.
+        fn random_latin_word() -> String {
+            let mut rng = rand::rng();
+            let len: usize = Rng::random_range(&mut rng, 5..10);
+            let dist = UniformChar::new_inclusive('\u{0041}', '\u{024F}').unwrap();
+            (0..len).map(|_| dist.sample(&mut rng)).collect()
+        }
+
+        const PATTERN: &str = "Ä%%";
+        let pattern = QString::plain(PATTERN).and_iaccent().and_icase();
+        for _ in 0..1000 {
+            let raw = random_latin_word();
+            let cooked = raw
+                .nfd()
+                .filter(|x| !is_combining_mark(*x))
+                .nfc()
+                .collect::<String>();
+            let ricotta = UniCase::unicode(&cooked).to_folded_case();
+            let expected = ricotta.starts_with('a');
+            let input = QString::plain(&raw).and_icase().and_iaccent();
+            let actual = QString::like(&input, &pattern);
+            if actual != expected {
+                debug!("    raw: '{raw}' {}", raw.escape_unicode());
+                debug!("  cotta: '{cooked}' {}", cooked.escape_unicode());
+                debug!("ricotta: '{ricotta}' {}", ricotta.escape_unicode());
+                panic!(
+                    "IA(IC({input})) LIKE IC(IA({pattern})) is {actual} but expected {expected}"
+                );
+            }
+        }
     }
 }

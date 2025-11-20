@@ -21,10 +21,12 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{ZCountry, countries, countries_reader};
-use csv::Reader;
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
-use std::{error::Error, fs::File};
+use crate::utils::{CountryCSV, CountryGPkg, countries, countries_gpkg};
+use futures::TryStreamExt;
+use ogc_cql2::{
+    Context, Evaluator, ExEvaluator, Expression, IterableDS, Outcome, Q, Resource, StreamableDS,
+};
+use std::error::Error;
 use tracing::error;
 use tracing_test::traced_test;
 
@@ -39,7 +41,7 @@ const LP5: &str = "NAME like '\\%\\_'";
 #[traced_test]
 fn test_outcome_1() -> Result<(), Box<dyn Error>> {
     let shared_ctx = Context::new().freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator = ExEvaluator::new(shared_ctx.clone());
     let input = format!("{LP1}");
     let exp = Expression::try_from_text(&input)?;
     // tracing::debug!("exp = {exp:?}");
@@ -51,7 +53,25 @@ fn test_outcome_1() -> Result<(), Box<dyn Error>> {
 
         assert!(matches!(res, Outcome::T));
     }
-    evaluator.teardown()?;
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_outcome_1_gpkg() -> Result<(), Box<dyn Error>> {
+    let shared_ctx = Context::new().freeze();
+    let mut evaluator = ExEvaluator::new(shared_ctx.clone());
+    let input = format!("{LP1}");
+    let exp = Expression::try_from_text(&input)?;
+
+    evaluator.setup(exp)?;
+
+    for feat in countries_gpkg().await? {
+        let res = evaluator.evaluate(&feat)?;
+
+        assert!(matches!(res, Outcome::T));
+    }
+
     Ok(())
 }
 
@@ -60,8 +80,8 @@ fn test_outcome_1() -> Result<(), Box<dyn Error>> {
 #[traced_test]
 fn test_outcome_2() -> Result<(), Box<dyn Error>> {
     let shared_ctx = Context::new().freeze();
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
 
     let input1 = format!("{LP2}");
     let exp1 = Expression::try_from_text(&input1)?;
@@ -73,11 +93,9 @@ fn test_outcome_2() -> Result<(), Box<dyn Error>> {
     evaluator1.setup(exp1)?;
     evaluator2.setup(exp2)?;
 
-    // let file = File::open("./tests/samples/csv/ne_110m_admin_0_countries.csv")?;
-    // let mut rdr = Reader::from_reader(file);
-    let mut rdr = countries_reader::<Reader<File>>()?;
-    for result in rdr.deserialize() {
-        let row: ZCountry = result?;
+    let csv = CountryCSV::new();
+    for x in csv.iter()? {
+        let row = x?;
         let is_empty = row.name().is_empty();
         let feat = Resource::try_from(row)?;
 
@@ -93,8 +111,42 @@ fn test_outcome_2() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_outcome_2_gpkg() -> Result<(), Box<dyn Error>> {
+    let shared_ctx = Context::new().freeze();
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
+
+    let input1 = format!("{LP2}");
+    let exp1 = Expression::try_from_text(&input1)?;
+    // tracing::debug!("exp1 = {exp1:?}");
+    let input2 = format!("{LP3}");
+    let exp2 = Expression::try_from_text(&input2)?;
+    // tracing::debug!("exp2 = {exp2:?}");
+
+    evaluator1.setup(exp1)?;
+    evaluator2.setup(exp2)?;
+
+    let gpkg = CountryGPkg::new().await?;
+    let mut stream = gpkg.stream().await?;
+    while let Some(resource) = stream.try_next().await? {
+        let is_empty = resource.get("NAME").is_none();
+
+        let res1 = evaluator1.evaluate(&resource)?;
+        let res2 = evaluator2.evaluate(&resource)?;
+
+        if is_empty {
+            assert!(matches!(res1, Outcome::F));
+            assert!(matches!(res2, Outcome::T));
+        } else {
+            assert!(matches!(res1, Outcome::T));
+            assert!(matches!(res2, Outcome::F));
+        }
+    }
+
     Ok(())
 }
 
@@ -103,8 +155,8 @@ fn test_outcome_2() -> Result<(), Box<dyn Error>> {
 #[traced_test]
 fn test_outcome_3() -> Result<(), Box<dyn Error>> {
     let shared_ctx = Context::new().freeze();
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
 
     let input1 = format!("{LP1}");
     let exp1 = Expression::try_from_text(&input1)?;
@@ -123,8 +175,30 @@ fn test_outcome_3() -> Result<(), Box<dyn Error>> {
         assert_eq!(res1, res2);
     }
 
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_outcome_3_gpkg() -> Result<(), Box<dyn Error>> {
+    let shared_ctx = Context::new().freeze();
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
+
+    let input1 = format!("{LP1}");
+    let exp1 = Expression::try_from_text(&input1)?;
+    let input2 = format!("{LP4}");
+    let exp2 = Expression::try_from_text(&input2)?;
+
+    evaluator1.setup(exp1)?;
+    evaluator2.setup(exp2)?;
+
+    for feat in countries_gpkg().await? {
+        let res1 = evaluator1.evaluate(&feat)?;
+        let res2 = evaluator2.evaluate(&feat)?;
+
+        assert_eq!(res1, res2);
+    }
+
     Ok(())
 }
 
@@ -140,7 +214,7 @@ fn test_outcome_4() -> Result<(), Box<dyn Error>> {
     ];
 
     let shared_ctx = Context::new().freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator = ExEvaluator::new(shared_ctx.clone());
     let input = format!("{LP5}");
     let exp = Expression::try_from_text(&input)?;
     // tracing::debug!("exp = {exp:?}");
@@ -162,8 +236,6 @@ fn test_outcome_4() -> Result<(), Box<dyn Error>> {
             failures += 1
         }
     }
-
-    evaluator.teardown()?;
 
     assert_eq!(failures, 0);
     Ok(())

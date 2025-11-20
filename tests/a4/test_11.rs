@@ -14,7 +14,7 @@
 //! *store the valid predicates for each data source.
 //!
 
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
+use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use rand::{Rng, distr::Uniform};
 use std::error::Error;
 use tracing_test::traced_test;
@@ -28,11 +28,11 @@ fn test() -> Result<(), Box<dyn Error>> {
     let mut rng = rand::rng();
     let shared_ctx = Context::new().freeze();
 
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     let input1 = format!("{E1}");
     let exp1 = Expression::try_from_text(&input1)?;
     // tracing::debug!("exp1 = {exp1:?}");
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     let input2 = format!("{E2}");
     let exp2 = Expression::try_from_text(&input2)?;
     // tracing::debug!("exp2 = {exp2:?}");
@@ -64,8 +64,6 @@ fn test() -> Result<(), Box<dyn Error>> {
             _ => (), // tracing::debug!("Outsider #2: {feat:?}"),
         }
     }
-
-    evaluator1.teardown()?;
 
     // tracing::debug!("expected/actuals = {expected}, {actual1}, {actual2}");
     assert_eq!(actual1, expected);

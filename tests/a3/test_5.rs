@@ -35,7 +35,7 @@
 
 use crate::utils::random_ascii_word;
 use jiff::{Timestamp, ToSpan, civil::Date};
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
+use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use rand::{
     Rng,
     distr::{Distribution, Uniform},
@@ -62,10 +62,10 @@ fn test_equal_bool() -> Result<(), Box<dyn Error>> {
     let (mut expect_true2, mut expect_false2) = (0, 0);
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
 
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     for n in 0..1000 {
@@ -97,9 +97,6 @@ fn test_equal_bool() -> Result<(), Box<dyn Error>> {
             Outcome::N => actual_null2 += 1,
         }
     }
-
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
 
     // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
     // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
@@ -142,10 +139,10 @@ fn test_equal_int() -> Result<(), Box<dyn Error>> {
     let (mut expect_true2, mut expect_false2) = (0, 0);
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
 
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     for n in 0..1000 {
@@ -177,9 +174,6 @@ fn test_equal_int() -> Result<(), Box<dyn Error>> {
             Outcome::N => actual_null2 += 1,
         }
     }
-
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
 
     // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
     // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
@@ -223,10 +217,10 @@ fn test_less_int() -> Result<(), Box<dyn Error>> {
     let (mut expect_true2, mut expect_false2) = (0, 0);
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
 
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     for n in 0..1000 {
@@ -258,9 +252,6 @@ fn test_less_int() -> Result<(), Box<dyn Error>> {
             Outcome::N => actual_null2 += 1,
         }
     }
-
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
 
     // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
     // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
@@ -304,10 +295,10 @@ fn test_greater_int() -> Result<(), Box<dyn Error>> {
     let (mut expect_true2, mut expect_false2) = (0, 0);
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
 
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     for n in 0..1000 {
@@ -339,9 +330,6 @@ fn test_greater_int() -> Result<(), Box<dyn Error>> {
             Outcome::N => actual_null2 += 1,
         }
     }
-
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
 
     // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
     // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
@@ -385,10 +373,10 @@ fn test_equal_float() -> Result<(), Box<dyn Error>> {
     let (mut expect_true2, mut expect_false2) = (0, 0);
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
 
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     for n in 0..1000 {
@@ -420,9 +408,6 @@ fn test_equal_float() -> Result<(), Box<dyn Error>> {
             Outcome::N => actual_null2 += 1,
         }
     }
-
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
 
     // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
     // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
@@ -466,10 +451,10 @@ fn test_less_float() -> Result<(), Box<dyn Error>> {
     let (mut expect_true2, mut expect_false2) = (0, 0);
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
 
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     for n in 0..1000 {
@@ -501,9 +486,6 @@ fn test_less_float() -> Result<(), Box<dyn Error>> {
             Outcome::N => actual_null2 += 1,
         }
     }
-
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
 
     // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
     // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
@@ -547,10 +529,10 @@ fn test_greater_float() -> Result<(), Box<dyn Error>> {
     let (mut expect_true2, mut expect_false2) = (0, 0);
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
 
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     for n in 0..1000 {
@@ -582,9 +564,6 @@ fn test_greater_float() -> Result<(), Box<dyn Error>> {
             Outcome::N => actual_null2 += 1,
         }
     }
-
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
 
     // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
     // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
@@ -628,10 +607,10 @@ fn test_equal_timestamp() -> Result<(), Box<dyn Error>> {
     let (mut expect_true2, mut expect_false2) = (0, 0);
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
 
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     for n in 0..1000 {
@@ -663,9 +642,6 @@ fn test_equal_timestamp() -> Result<(), Box<dyn Error>> {
             Outcome::N => actual_null2 += 1,
         }
     }
-
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
 
     // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
     // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
@@ -710,10 +686,10 @@ fn test_less_timestamp() -> Result<(), Box<dyn Error>> {
     let (mut expect_true2, mut expect_false2) = (0, 0);
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
 
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     for n in 0..1000 {
@@ -745,9 +721,6 @@ fn test_less_timestamp() -> Result<(), Box<dyn Error>> {
             Outcome::N => actual_null2 += 1,
         }
     }
-
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
 
     // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
     // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
@@ -792,10 +765,10 @@ fn test_greater_timestamp() -> Result<(), Box<dyn Error>> {
     let (mut expect_true2, mut expect_false2) = (0, 0);
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
 
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     for n in 0..1000 {
@@ -827,9 +800,6 @@ fn test_greater_timestamp() -> Result<(), Box<dyn Error>> {
             Outcome::N => actual_null2 += 1,
         }
     }
-
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
 
     // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
     // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
@@ -869,9 +839,9 @@ fn test_equal_date() -> Result<(), Box<dyn Error>> {
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
     let shared_ctx = Context::new().freeze();
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     let mut rng = rand::rng();
@@ -905,9 +875,6 @@ fn test_equal_date() -> Result<(), Box<dyn Error>> {
             Outcome::N => actual_null2 += 1,
         }
     }
-
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
 
     // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
     // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
@@ -947,9 +914,9 @@ fn test_less_date() -> Result<(), Box<dyn Error>> {
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
     let shared_ctx = Context::new().freeze();
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     let mut rng = rand::rng();
@@ -983,9 +950,6 @@ fn test_less_date() -> Result<(), Box<dyn Error>> {
             Outcome::N => actual_null2 += 1,
         }
     }
-
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
 
     // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
     // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
@@ -1025,9 +989,9 @@ fn test_greater_date() -> Result<(), Box<dyn Error>> {
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
     let shared_ctx = Context::new().freeze();
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     let mut rng = rand::rng();
@@ -1061,9 +1025,6 @@ fn test_greater_date() -> Result<(), Box<dyn Error>> {
             Outcome::N => actual_null2 += 1,
         }
     }
-
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
 
     // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
     // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
@@ -1102,9 +1063,9 @@ fn test_equal_str() -> Result<(), Box<dyn Error>> {
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
     let shared_ctx = Context::new().freeze();
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     let mut rng = rand::rng();
@@ -1144,9 +1105,6 @@ fn test_equal_str() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
-
     // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
     // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
 
@@ -1184,9 +1142,9 @@ fn test_less_str() -> Result<(), Box<dyn Error>> {
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
     let shared_ctx = Context::new().freeze();
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     let mut rng = rand::rng();
@@ -1225,9 +1183,6 @@ fn test_less_str() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
-
     // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
     // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
 
@@ -1265,9 +1220,9 @@ fn test_greater_str() -> Result<(), Box<dyn Error>> {
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
     let shared_ctx = Context::new().freeze();
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     let mut rng = rand::rng();
@@ -1305,9 +1260,6 @@ fn test_greater_str() -> Result<(), Box<dyn Error>> {
             Outcome::N => actual_null2 += 1,
         }
     }
-
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
 
     // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
     // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");

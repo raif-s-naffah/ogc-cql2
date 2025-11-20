@@ -18,48 +18,36 @@
 //!
 
 use crate::utils::random_unicode_word;
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
-use rand::{Rng, rng};
+use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use std::error::Error;
 use tracing_test::traced_test;
-
-const PREFIX: &str = "ä"; // small 'a' w/ umlaut
-
-fn starts_with_prefix() -> String {
-    let hit = rng().random_bool(0.5);
-    if hit {
-        format!("{PREFIX}{}", random_unicode_word())
-    } else {
-        random_unicode_word()
-    }
-}
+use unicase::UniCase;
+use unicode_normalization::{UnicodeNormalization, char::is_combining_mark};
 
 #[test]
 #[traced_test]
 fn test() -> Result<(), Box<dyn Error>> {
     const E1: &str = r#"ACCENTI(CASEI(z_string)) LIKE accenti(casei('Ä%'))"#;
     const E2: &str = r#"ACCENTI(CASEI(z_string)) LIKE accenti(casei('a%'))"#;
-    #[rustfmt::skip]
-    const CANDIDATES: [char; 46] = [
-        'a', 'à', 'á', 'â', 'ã', 'ä', 'å', 'ā', 'ă',
-        'ą', 'ǎ', 'ȁ', 'ȃ', 'ȧ', 'ḁ', 'ẚ', 'ạ', 'ả',
-        'ặ', 'ằ', 'ầ', 'ẩ', 'ǟ',
-        'A', 'À', 'Á', 'Â', 'Ã', 'Ä', 'Å', 'Ā', 'Ă',
-        'Ą', 'Ǎ', 'Ȁ', 'Ȃ', 'Ȧ', 'Ḁ', 'Ạ', 'Ả', 'Ặ',
-        'Ằ', 'Ậ', 'Ầ', 'Ẩ', 'Ǟ',
-    ];
+
     let expr1 = Expression::try_from_text(E1)?;
     let expr2 = Expression::try_from_text(E2)?;
 
     let shared_ctx = Context::new().freeze();
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     for n in 0..1000 {
-        let s = starts_with_prefix();
-        let hit = CANDIDATES.contains(&s.chars().nth(0).unwrap());
+        let s = random_unicode_word();
+        let cooked = s
+            .nfd()
+            .filter(|x| !is_combining_mark(*x))
+            .nfc()
+            .collect::<String>();
+        let ricotta = UniCase::unicode(&cooked).to_folded_case();
+        let hit = ricotta.starts_with('a');
 
         let feat = Resource::from([
             ("fid".into(), Q::try_from(n + 1)?),
@@ -90,9 +78,6 @@ fn test() -> Result<(), Box<dyn Error>> {
             }
         }
     }
-
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
 
     Ok(())
 }

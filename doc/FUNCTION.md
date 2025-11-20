@@ -5,7 +5,7 @@ The CQL2 Standard makes provisions for externally defined _Functions_ in additio
 This project implements **all** the required standard functions. It also offers:
 
 * Support for few ones called _builtins_ that can be used in _Filter Expressions_.
-* A mechanism for externally defined functions, implemented as [Rust Closures](https://doc.rust-lang.org/book/ch13-01-closures.html), that can be _registered_ in a [Context] which is then passed to an [Evaluator] implementation (such as [EvaluatorImpl]) for processing an [Expression] against one or more [Resource].
+* A mechanism for externally defined functions, implemented as [Rust Closures](https://doc.rust-lang.org/book/ch13-01-closures.html), that can be _registered_ in a [`Context`] which is then passed to an [`Evaluator`] implementation (such as [`ExEvaluator`]) for processing an [`Expression`] against one or more [`Resource`].
 
 Examples of both types, and the plumbing to wire them, abound in the `tests` folder. Here is a working simple example:
 
@@ -37,7 +37,7 @@ let shared_ctx = ctx.freeze();
 let expression = Expression::try_from_text("3 = sum(1, 2)")?;
 
 // instantiate an Evaluator instance and feed it the Context...
-let mut evaluator = EvaluatorImpl::new(shared_ctx);
+let mut evaluator = ExEvaluator::new(shared_ctx);
 
 // now set up that Evaluator for evaluating Resources...
 evaluator.setup(expression)?;
@@ -52,16 +52,13 @@ let res = evaluator.evaluate(&feature)?;
 // assert the outcome is TRUE...
 assert!(matches!(res, Outcome::T));
 
-// tear down the Evaluator...
-evaluator.teardown()?;
-
 # Ok(())
 # }
 ```
 
 # Data types
 
-This library supports a subset of data types available in a Rust environment for use with function arguments and results. The [ExtDataType] variants embody those types. Each variant maps to a specific yet opaque (for now) Rust type...
+This library supports a subset of data types available in a Rust environment for use with function arguments and results. The [`ExtDataType`] variants embody those types. Each variant maps to a specific yet opaque Rust type...
 
 | `ExtDataType` variant | Symbol | inner type                                                       |
 |-----------------------|--------|------------------------------------------------------------------|
@@ -70,7 +67,7 @@ This library supports a subset of data types available in a Rust environment for
 | `Bool`                |  `B`   | bool                                                             |
 | `Timestamp`           |  `Z`   | [jiff::Zoned](https://docs.rs/jiff/0.2.15/jiff/struct.Zoned.html)|
 | `Date`                |  `Z`   | jiff::Zoned                                                      |
-| `Geom`                |  `G`   | [geos::Geom](https://docs.rs/geos/10.0.0/geos/trait.Geom.html)   |
+| `Geom`                |  `G`   | [G]                                                              |
 
 
 # Numeric (`Num`) builtins
@@ -125,7 +122,7 @@ This library supports a subset of data types available in a Rust environment for
 | `get_x`    | x: `G`        | `N`    | Return the _X_ coordinate of `x` if it's a Point.          |
 | `get_y`    | x: `G`        | `N`    | Return the _Y_ coordinate of `x` if it's a Point.          |
 | `get_z`    | x: `G`        | `N`    | Return the _Z_ coordinate of `x` if it's a Point and is 3D.|
-| `wkt`      | x: `G`        | `S`    | Return a WKT representation of `x`.                        |
+| `wkt`      | x: `G`, p: `N`| `S`    | Return a WKT representation of `x` w/ `p` precision. See [here][GTrait::to_wkt_fmt] for details|
 
 
 [101]: <https://doc.rust-lang.org/std/primitive.f64.html#method.abs>

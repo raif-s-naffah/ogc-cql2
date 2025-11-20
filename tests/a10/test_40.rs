@@ -37,7 +37,7 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{PLACES, harness};
+use crate::utils::{PlaceCSV, PlaceGPkg, harness, harness_gpkg, harness_sql};
 use std::error::Error;
 
 #[rustfmt::skip]
@@ -69,12 +69,37 @@ const DATE_PREDICATES: [(&str, u32); 10] = [
 ];
 
 #[test]
-fn test_timestaps() -> Result<(), Box<dyn Error>> {
-    harness(PLACES, TIMESTAMP_PREDICATES.to_vec())
+fn test_timestamps() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceCSV::new();
+    harness(ds, &TIMESTAMP_PREDICATES)
+}
+
+#[tokio::test]
+async fn test_timestamps_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceGPkg::new().await?;
+    harness_gpkg(ds, &TIMESTAMP_PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_timestamps_sql() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceGPkg::new().await?;
+    harness_sql(ds, &TIMESTAMP_PREDICATES).await
 }
 
 #[test]
-#[tracing_test::traced_test]
 fn test_dates() -> Result<(), Box<dyn Error>> {
-    harness(PLACES, DATE_PREDICATES.to_vec())
+    let ds = PlaceCSV::new();
+    harness(ds, &DATE_PREDICATES)
+}
+
+#[tokio::test]
+async fn test_dates_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceGPkg::new().await?;
+    harness_gpkg(ds, &DATE_PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_dates_sql() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceGPkg::new().await?;
+    harness_sql(ds, &DATE_PREDICATES).await
 }

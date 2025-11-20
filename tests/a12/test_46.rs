@@ -33,7 +33,7 @@
 //! * store the valid predicates for each data source.
 //!
 
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
+use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use std::error::Error;
 
 #[test]
@@ -47,21 +47,21 @@ fn test_string() -> Result<(), Box<dyn Error>> {
 
     let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     let exp2 = Expression::try_from_text(E2)?;
     evaluator2.setup(exp2)?;
     let exp3 = Expression::try_from_text(E3)?;
-    let mut evaluator3 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator3 = ExEvaluator::new(shared_ctx.clone());
     evaluator3.setup(exp3)?;
-    let mut evaluator4 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator4 = ExEvaluator::new(shared_ctx.clone());
     let exp4 = Expression::try_from_text(E4)?;
     evaluator4.setup(exp4)?;
     let exp5 = Expression::try_from_text(E5)?;
-    let mut evaluator5 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator5 = ExEvaluator::new(shared_ctx.clone());
     evaluator5.setup(exp5)?;
-    let mut evaluator6 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator6 = ExEvaluator::new(shared_ctx.clone());
     let exp6 = Expression::try_from_text(E6)?;
     evaluator6.setup(exp6)?;
 
@@ -111,13 +111,6 @@ fn test_string() -> Result<(), Box<dyn Error>> {
     let res = evaluator6.evaluate(&feat)?;
     assert!(matches!(res, Outcome::F));
 
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
-    evaluator3.teardown()?;
-    evaluator4.teardown()?;
-    evaluator5.teardown()?;
-    evaluator6.teardown()?;
-
     Ok(())
 }
 
@@ -132,21 +125,21 @@ fn test_number() -> Result<(), Box<dyn Error>> {
 
     let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     let exp2 = Expression::try_from_text(E2)?;
     evaluator2.setup(exp2)?;
     let exp3 = Expression::try_from_text(E3)?;
-    let mut evaluator3 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator3 = ExEvaluator::new(shared_ctx.clone());
     evaluator3.setup(exp3)?;
-    let mut evaluator4 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator4 = ExEvaluator::new(shared_ctx.clone());
     let exp4 = Expression::try_from_text(E4)?;
     evaluator4.setup(exp4)?;
     let exp5 = Expression::try_from_text(E5)?;
-    let mut evaluator5 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator5 = ExEvaluator::new(shared_ctx.clone());
     evaluator5.setup(exp5)?;
-    let mut evaluator6 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator6 = ExEvaluator::new(shared_ctx.clone());
     let exp6 = Expression::try_from_text(E6)?;
     evaluator6.setup(exp6)?;
 
@@ -196,13 +189,6 @@ fn test_number() -> Result<(), Box<dyn Error>> {
     let res = evaluator6.evaluate(&feat)?;
     assert!(matches!(res, Outcome::F));
 
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
-    evaluator3.teardown()?;
-    evaluator4.teardown()?;
-    evaluator5.teardown()?;
-    evaluator6.teardown()?;
-
     Ok(())
 }
 
@@ -217,21 +203,21 @@ fn test_integer() -> Result<(), Box<dyn Error>> {
 
     let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     let exp2 = Expression::try_from_text(E2)?;
     evaluator2.setup(exp2)?;
     let exp3 = Expression::try_from_text(E3)?;
-    let mut evaluator3 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator3 = ExEvaluator::new(shared_ctx.clone());
     evaluator3.setup(exp3)?;
-    let mut evaluator4 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator4 = ExEvaluator::new(shared_ctx.clone());
     let exp4 = Expression::try_from_text(E4)?;
     evaluator4.setup(exp4)?;
     let exp5 = Expression::try_from_text(E5)?;
-    let mut evaluator5 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator5 = ExEvaluator::new(shared_ctx.clone());
     evaluator5.setup(exp5)?;
-    let mut evaluator6 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator6 = ExEvaluator::new(shared_ctx.clone());
     let exp6 = Expression::try_from_text(E6)?;
     evaluator6.setup(exp6)?;
 
@@ -281,13 +267,6 @@ fn test_integer() -> Result<(), Box<dyn Error>> {
     let res = evaluator6.evaluate(&feat)?;
     assert!(matches!(res, Outcome::F));
 
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
-    evaluator3.teardown()?;
-    evaluator4.teardown()?;
-    evaluator5.teardown()?;
-    evaluator6.teardown()?;
-
     Ok(())
 }
 
@@ -323,21 +302,21 @@ fn test_boolean() -> Result<(), Box<dyn Error>> {
 
     let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     let exp2 = Expression::try_from_text(E2)?;
     evaluator2.setup(exp2)?;
     let exp3 = Expression::try_from_text(E3)?;
-    let mut evaluator3 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator3 = ExEvaluator::new(shared_ctx.clone());
     evaluator3.setup(exp3)?;
-    let mut evaluator4 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator4 = ExEvaluator::new(shared_ctx.clone());
     let exp4 = Expression::try_from_text(E4)?;
     evaluator4.setup(exp4)?;
     let exp5 = Expression::try_from_text(E5)?;
-    let mut evaluator5 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator5 = ExEvaluator::new(shared_ctx.clone());
     evaluator5.setup(exp5)?;
-    let mut evaluator6 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator6 = ExEvaluator::new(shared_ctx.clone());
     let exp6 = Expression::try_from_text(E6)?;
     evaluator6.setup(exp6)?;
 
@@ -389,13 +368,6 @@ fn test_boolean() -> Result<(), Box<dyn Error>> {
     let res = evaluator6.evaluate(&feat)?;
     assert!(matches!(res, Outcome::T));
 
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
-    evaluator3.teardown()?;
-    evaluator4.teardown()?;
-    evaluator5.teardown()?;
-    evaluator6.teardown()?;
-
     Ok(())
 }
 
@@ -410,21 +382,21 @@ fn test_timestamp() -> Result<(), Box<dyn Error>> {
 
     let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     let exp2 = Expression::try_from_text(E2)?;
     evaluator2.setup(exp2)?;
     let exp3 = Expression::try_from_text(E3)?;
-    let mut evaluator3 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator3 = ExEvaluator::new(shared_ctx.clone());
     evaluator3.setup(exp3)?;
-    let mut evaluator4 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator4 = ExEvaluator::new(shared_ctx.clone());
     let exp4 = Expression::try_from_text(E4)?;
     evaluator4.setup(exp4)?;
     let exp5 = Expression::try_from_text(E5)?;
-    let mut evaluator5 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator5 = ExEvaluator::new(shared_ctx.clone());
     evaluator5.setup(exp5)?;
-    let mut evaluator6 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator6 = ExEvaluator::new(shared_ctx.clone());
     let exp6 = Expression::try_from_text(E6)?;
     evaluator6.setup(exp6)?;
 
@@ -486,13 +458,6 @@ fn test_timestamp() -> Result<(), Box<dyn Error>> {
     let res = evaluator6.evaluate(&feat)?;
     assert!(matches!(res, Outcome::F));
 
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
-    evaluator3.teardown()?;
-    evaluator4.teardown()?;
-    evaluator5.teardown()?;
-    evaluator6.teardown()?;
-
     Ok(())
 }
 
@@ -507,21 +472,21 @@ fn test_date() -> Result<(), Box<dyn Error>> {
 
     let shared_ctx = Context::new().freeze();
     let exp1 = Expression::try_from_text(E1)?;
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(exp1)?;
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     let exp2 = Expression::try_from_text(E2)?;
     evaluator2.setup(exp2)?;
     let exp3 = Expression::try_from_text(E3)?;
-    let mut evaluator3 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator3 = ExEvaluator::new(shared_ctx.clone());
     evaluator3.setup(exp3)?;
-    let mut evaluator4 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator4 = ExEvaluator::new(shared_ctx.clone());
     let exp4 = Expression::try_from_text(E4)?;
     evaluator4.setup(exp4)?;
     let exp5 = Expression::try_from_text(E5)?;
-    let mut evaluator5 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator5 = ExEvaluator::new(shared_ctx.clone());
     evaluator5.setup(exp5)?;
-    let mut evaluator6 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator6 = ExEvaluator::new(shared_ctx.clone());
     let exp6 = Expression::try_from_text(E6)?;
     evaluator6.setup(exp6)?;
 
@@ -570,13 +535,6 @@ fn test_date() -> Result<(), Box<dyn Error>> {
     assert!(matches!(res, Outcome::T));
     let res = evaluator6.evaluate(&feat)?;
     assert!(matches!(res, Outcome::F));
-
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
-    evaluator3.teardown()?;
-    evaluator4.teardown()?;
-    evaluator5.teardown()?;
-    evaluator6.teardown()?;
 
     Ok(())
 }

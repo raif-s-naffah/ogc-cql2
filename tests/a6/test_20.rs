@@ -17,7 +17,7 @@
 //!
 
 use crate::utils::random_unicode_word;
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, QString, Resource};
+use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, QString, Resource};
 use rand::{Rng, rng};
 use std::error::Error;
 use tracing_test::traced_test;
@@ -46,9 +46,9 @@ fn test() -> Result<(), Box<dyn Error>> {
     let (mut actual_true2, mut actual_false2, mut actual_null2) = (0, 0, 0);
 
     let shared_ctx = Context::new().freeze();
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     for n in 0..1000 {
@@ -80,9 +80,6 @@ fn test() -> Result<(), Box<dyn Error>> {
             Outcome::N => actual_null2 += 1,
         }
     }
-
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
 
     tracing::debug!("    expect(T/F) = {expect_true}, {expect_false}");
     tracing::debug!("actual #1 (T/F) = {actual_true1}, {actual_false1}");

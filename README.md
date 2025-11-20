@@ -10,6 +10,7 @@ So far, users of this library will be able to:
 * Implement _Evaluators_ to process collections of _Resources_ (a.k.a features) against valid expressions.
 * Make use of a comprehensive set of builtin _Functions_ to use in writing their expressions.
 * Implement their own versions of _Functions_ and register them w/ _Evaluators_.
+* Evaluate CQL2 _Expressions_ against records provided by _Data Sources_ through two traits: _Iterable_ and _Streamable_.  So far implementations for _CSV_ and _GeoPackage_ data-sources are also included.
 
 Changes are tracked in [ChangeLog](CHANGELOG.md).
 
@@ -50,9 +51,11 @@ The `tests` folder contains tests that implement most of the `Annex A: Abstract 
 
 ### Test data
 
-The folder `tests/samples/csv` contain 3 CSV files created/converted from the same named _Layers_ in the [GeoPackage][1] referenced in the Standard.
+The folder `tests/samples/data` contain 3 CSV files created/converted from the same named _Layers_ in the [GeoPackage][1] referenced in the Standard, as well as the GeoPackage DB/file itself.
 
 Those CSV files were first created by exporting each _Layer_ to a CSV file using [DB Browser for SQLite Version 3.13.1][2], then converting the geometries to their WKT form and renaming their column `geom`.
+
+The _GeoPackage_ DB/file is used for testing the _GeoPackage Data Source_ and the _Streamable Data Source_ trait with and without translating the filter expression to SQL.
 
 The other 2 folders next to `csv` in the same parent folder mirror the same data found [here][3]. 
 
@@ -87,19 +90,85 @@ For now these are the environment variables that can be configured:
 _Coordinate Reference System_ (CRS) code to use when validating geometry coordinates. Defaults to `EPSG:4326` if/when undefined.
 
 #### `DEFAULT_PRECISION`
-_Precision_ (number of digits after the decimal point) to keep/use when processing coordinates. Defaults to `6` if/when undefined. For _WGS 84_ coordinates this translates to approx. `11.1` cm. accuracy when projecting them to _Web Mercator_.
+_Precision_ (number of digits after the decimal point) to keep/use when processing coordinates. Defaults to `7` if/when undefined. For _WGS 84_ coordinates this translates to approx. `1.11` cm. accuracy when projecting them to _Web Mercator_.
 
-For now only positive integers in the range `0..7` inclusive are allowed.
+For now only positive integers in the range `0..32` inclusive are allowed.
 
 
 #### `RUST_LOG`
 See <https://docs.rs/env_logger/latest/env_logger/#enabling-logging> for details.
 
 
+## Required external software
+
+### GEOS
+This library relies on _GEOS_ by virtue of its dependence on the [`geos`][5] crate. In my case the native installed version shows the following at the time this page was last updated...
+
+```bash
+Name            : geos
+Epoch           : 0
+Version         : 3.14.1
+Release         : 1.fc43
+Architecture    : x86_64
+Installed size  : 4.1 MiB
+Source          : geos-3.14.1-1.fc43.src.rpm
+From repository : updates
+Summary         : GEOS is a C++ port of the Java Topology Suite
+URL             : http://trac.osgeo.org/geos/
+License         : LGPL-2.1-only
+Description     : GEOS (Geometry Engine - Open Source) is a C++ port of the Java Topology
+                : Suite (JTS). As such, it aims to contain the complete functionality of
+                : JTS in C++. This includes all the OpenGIS "Simple Features for SQL" spatial
+                : predicate functions and spatial operators, as well as specific JTS topology
+                : functions such as IsValid()
+Vendor          : Fedora Project
+```
+
+### SQLite + Spatialite extension
+This library now supports _GeoPackage_ database files. This requires an installed version of `sqlite` and `libspatial` binaries. The latter will provide the `mod_spatialite.so` extension usually to be found under `/usr/lib64/`.  Here is the info about my test installation at the time of this page's last update...
+
+```bash
+Name            : sqlite
+Epoch           : 0
+Version         : 3.50.2
+Release         : 2.fc43
+Architecture    : x86_64
+Installed size  : 1.8 MiB
+Source          : sqlite-3.50.2-2.fc43.src.rpm
+From repository : fedora
+Summary         : Library that implements an embeddable SQL database engine
+URL             : http://www.sqlite.org/
+License         : blessing
+Description     : SQLite is a C library that implements an SQL database engine. A large
+                : subset of SQL92 is supported. A complete database is stored in a
+                : single disk file. The API is designed for convenience and ease of use.
+                : ...
+Vendor          : Fedora Project
+...
+Name            : libspatialite
+Epoch           : 0
+Version         : 5.1.0
+Release         : 11.fc43
+Architecture    : x86_64
+Installed size  : 15.3 MiB
+Source          : libspatialite-5.1.0-11.fc43.src.rpm
+From repository : fedora
+Summary         : Enables SQLite to support spatial data
+URL             : https://www.gaia-gis.it/fossil/libspatialite
+License         : MPL-1.1 OR GPL-2.0-or-later OR LGPL-2.0-or-later
+Description     : SpatiaLite is a a library extending the basic SQLite core in order to
+                : get a full fledged Spatial DBMS, really simple and lightweight, but
+                : mostly OGC-SFS compliant.
+Vendor          : Fedora Project
+```
+
 ## TODO
 
 In no particular order...
 
+- [ ] Implement more _Data Sources_ such as _Shapefiles_ and _PostGIS tables_.
+- [ ] Add an option to the `repl` command line tool to output valid expressions as SQL WHERE clauses.
+- [ ] Investigate implementing basic spatial operators for 2D geometries in pure Rust; i.e. removing ependenceon the `geos` crate.
 - [ ] Implement missing conformance tests preferably after finding an external set of Test Vectors.
 - [ ] Add more _Functions_.
 - [ ] Implement pooling of _Evaluators_ à la DB connections pools.
@@ -112,7 +181,7 @@ In no particular order...
 - [ ] Investigate alternative means for external clients to inject functions logic + metadata.
 - [x] ~~The WKT parsing machinery entry-point is private. Make it public.~~ Done 2025-08-31.
 - [x] ~~Properly manage + handle global configurable options such as default CRS bearing in mind how it may affect conformance tests.~~ Done 2025-09-02.
-- [ ] Add an LRU to store commonly used CRSes.
+- [x] ~~Add an LRU to store commonly used CRSes.~~ Turns out Proj is not `Send` and hence cannot be cached in an LRU cache safely w/o introducing `unsafe` code.
 
 
 ## License
@@ -123,3 +192,4 @@ This product is licensed under the Apache License Version 2.0 &mdash;see [includ
 [2]: https://github.com/sqlitebrowser/sqlitebrowser
 [3]: https://github.com/opengeospatial/ogcapi-features/tree/master/cql2/standard/schema/examples
 [4]: https://docs.geoserver.org/2.27.x/en/user/filter/function_reference.html
+[5]: https://crates.io/crates/geos

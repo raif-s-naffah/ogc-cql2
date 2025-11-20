@@ -22,7 +22,7 @@
 //!
 
 use jiff::{Timestamp, ToSpan, civil::Date};
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
+use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use rand::{Rng, distr::Uniform};
 use std::error::Error;
 use tracing_test::traced_test;
@@ -36,7 +36,7 @@ fn test_numbers() -> Result<(), Box<dyn Error>> {
     let mut rng = rand::rng();
     let shared_ctx = Context::new().freeze();
 
-    let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator = ExEvaluator::new(shared_ctx.clone());
     let exp = Expression::try_from_text(&format!("{E}"))?;
 
     evaluator.setup(exp)?;
@@ -60,8 +60,6 @@ fn test_numbers() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    evaluator.teardown()?;
-
     tracing::debug!("expected/actual = {expected}, {actual}");
     assert_eq!(actual, expected);
 
@@ -83,7 +81,7 @@ fn test_strings() -> Result<(), Box<dyn Error>> {
     let mut rng = rand::rng();
     let shared_ctx = Context::new().freeze();
 
-    let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator = ExEvaluator::new(shared_ctx.clone());
     let exp = Expression::try_from_text(&format!("{E}"))?;
 
     evaluator.setup(exp)?;
@@ -107,8 +105,6 @@ fn test_strings() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    evaluator.teardown()?;
-
     tracing::debug!("expected/actual = {expected}, {actual}");
     assert_eq!(actual, expected);
 
@@ -124,7 +120,7 @@ fn test_booleans() -> Result<(), Box<dyn Error>> {
     let mut rng = rand::rng();
     let shared_ctx = Context::new().freeze();
 
-    let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator = ExEvaluator::new(shared_ctx.clone());
     let exp = Expression::try_from_text(&format!("{E}"))?;
 
     evaluator.setup(exp)?;
@@ -146,8 +142,6 @@ fn test_booleans() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    evaluator.teardown()?;
-
     tracing::debug!("expected/actual = {expected}, {actual}");
     assert_eq!(actual, expected);
 
@@ -157,7 +151,6 @@ fn test_booleans() -> Result<(), Box<dyn Error>> {
 #[test]
 #[traced_test]
 fn test_timestamps() -> Result<(), Box<dyn Error>> {
-    // const E: &str = r#"foo in ('2022-04-14T14:52:56Z', '2022-04-14T15:52:56Z')"#;
     const E: &str =
         r#"foo in (timestamp('2022-04-14T14:52:56Z'), TIMEStamp('2022-04-14T15:52:56Z'))"#;
 
@@ -170,7 +163,7 @@ fn test_timestamps() -> Result<(), Box<dyn Error>> {
     let mut rng = rand::rng();
     let shared_ctx = Context::new().freeze();
 
-    let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator = ExEvaluator::new(shared_ctx.clone());
     let exp = Expression::try_from_text(&format!("{E}"))?;
     // tracing::debug!("exp = {exp:?}");
 
@@ -196,8 +189,6 @@ fn test_timestamps() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    evaluator.teardown()?;
-
     tracing::debug!("expected/actual = {expected}, {actual}");
     assert_eq!(actual, expected);
 
@@ -219,7 +210,7 @@ fn test_dates() -> Result<(), Box<dyn Error>> {
     let mut rng = rand::rng();
     let shared_ctx = Context::new().freeze();
 
-    let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator = ExEvaluator::new(shared_ctx.clone());
     let exp = Expression::try_from_text(&format!("{E}"))?;
 
     evaluator.setup(exp)?;
@@ -243,8 +234,6 @@ fn test_dates() -> Result<(), Box<dyn Error>> {
             actual += 1
         }
     }
-
-    evaluator.teardown()?;
 
     tracing::debug!("expected/actual = {expected}, {actual}");
     assert_eq!(actual, expected);

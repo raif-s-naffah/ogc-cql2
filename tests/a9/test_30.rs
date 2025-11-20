@@ -23,8 +23,8 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{COUNTRIES, harness};
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, MyError, Q, Resource};
+use crate::utils::{CountryCSV, CountryGPkg, harness, harness_gpkg, harness_sql};
+use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, MyError, Q, Resource};
 use std::error::Error;
 use tracing_test::traced_test;
 
@@ -44,7 +44,7 @@ fn test_invalid_coordinates() -> Result<(), Box<dyn Error>> {
 
     let expr = Expression::try_from_text(E)?;
     let shared_ctx = Context::new().freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx);
+    let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
 
     let f1 = Resource::from([
@@ -61,5 +61,18 @@ fn test_invalid_coordinates() -> Result<(), Box<dyn Error>> {
 #[test]
 #[traced_test]
 fn test() -> Result<(), Box<dyn Error>> {
-    harness(COUNTRIES, PREDICATES.to_vec())
+    let ds = CountryCSV::new();
+    harness(ds, &PREDICATES)
+}
+
+#[tokio::test]
+async fn test_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = CountryGPkg::new().await?;
+    harness_gpkg(ds, &PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_sql() -> Result<(), Box<dyn Error>> {
+    let ds = CountryGPkg::new().await?;
+    harness_sql(ds, &PREDICATES).await
 }

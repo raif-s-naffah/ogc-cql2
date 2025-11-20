@@ -15,7 +15,7 @@
 //! * store the valid predicates for each data source.
 //!
 
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
+use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use std::error::Error;
 use tracing_test::traced_test;
 
@@ -41,7 +41,7 @@ fn test_bbox() -> Result<(), Box<dyn Error>> {
     let expr = Expression::try_from_text(E)?;
     // tracing::debug!("expr = {expr:?}");
     let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx);
+    let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
 
     for (n, wkt) in FAIL.iter().enumerate() {
@@ -81,7 +81,7 @@ fn test_polygon() -> Result<(), Box<dyn Error>> {
     let expr = Expression::try_from_text(E)?;
     // tracing::debug!("expr = {expr:?}");
     let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx);
+    let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
 
     for (n, wkt) in FAIL.iter().enumerate() {
@@ -124,7 +124,7 @@ fn test_line() -> Result<(), Box<dyn Error>> {
     let expr = Expression::try_from_text(E)?;
     // tracing::debug!("expr = {expr:?}");
     let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx);
+    let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
 
     for (n, wkt) in PASS.iter().enumerate() {

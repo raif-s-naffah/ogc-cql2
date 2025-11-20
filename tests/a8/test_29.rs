@@ -11,7 +11,7 @@
 //! * assert that the expected result is returned.
 //!
 
-use crate::utils::{COUNTRIES, harness};
+use crate::utils::{CountryCSV, CountryGPkg, harness, harness_gpkg, harness_sql};
 use std::error::Error;
 use tracing_test::traced_test;
 
@@ -59,5 +59,18 @@ const PREDICATES: [(&str, u32); 7] = [
 #[test]
 #[traced_test]
 fn test() -> Result<(), Box<dyn Error>> {
-    harness(COUNTRIES, PREDICATES.to_vec())
+    let ds = CountryCSV::new();
+    harness(ds, &PREDICATES)
+}
+
+#[tokio::test]
+async fn test_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = CountryGPkg::new().await?;
+    harness_gpkg(ds, &PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_sql() -> Result<(), Box<dyn Error>> {
+    let ds = CountryGPkg::new().await?;
+    harness_sql(ds, &PREDICATES).await
 }

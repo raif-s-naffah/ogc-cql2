@@ -14,7 +14,7 @@
 //! * assert successful execution of the evaluation.
 //!
 
-use crate::utils::{PLACES, harness};
+use crate::utils::{PlaceCSV, PlaceGPkg, harness, harness_gpkg, harness_sql};
 use std::error::Error;
 use tracing_test::traced_test;
 
@@ -53,5 +53,32 @@ fn test() -> Result<(), Box<dyn Error>> {
     }
     let predicates: Vec<(&str, u32)> = expressions.iter().map(|(s, c)| (s.as_str(), *c)).collect();
 
-    harness(PLACES, predicates)
+    let ds = PlaceCSV::new();
+    harness(ds, &predicates)
+}
+
+#[tokio::test]
+async fn test_gpkg() -> Result<(), Box<dyn Error>> {
+    let mut expressions = vec![];
+    for (p1, p2, p3, p4, count) in PREDICATES {
+        let ex = format!("((NOT {p1} AND {p2}) OR ({p3} and NOT {p4}) or not ({p1} AND {p4}))");
+        expressions.push((ex, count));
+    }
+    let predicates: Vec<(&str, u32)> = expressions.iter().map(|(s, c)| (s.as_str(), *c)).collect();
+
+    let ds = PlaceGPkg::new().await?;
+    harness_gpkg(ds, &predicates).await
+}
+
+#[tokio::test]
+async fn test_sql() -> Result<(), Box<dyn Error>> {
+    let mut expressions = vec![];
+    for (p1, p2, p3, p4, count) in PREDICATES {
+        let ex = format!("((NOT {p1} AND {p2}) OR ({p3} and NOT {p4}) or not ({p1} AND {p4}))");
+        expressions.push((ex, count));
+    }
+    let predicates: Vec<(&str, u32)> = expressions.iter().map(|(s, c)| (s.as_str(), *c)).collect();
+
+    let ds = PlaceGPkg::new().await?;
+    harness_sql(ds, &predicates).await
 }

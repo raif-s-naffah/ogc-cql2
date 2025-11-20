@@ -13,7 +13,7 @@
 //! * assert that the escaped embedded characters have been correctly recovered.
 //!
 
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
+use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use std::error::Error;
 use tracing_test::traced_test;
 
@@ -40,7 +40,7 @@ def'"#,
 
     let shared_ctx = Context::new().freeze();
     for (ndx, (s, expected)) in TV.iter().enumerate() {
-        let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
+        let mut evaluator = ExEvaluator::new(shared_ctx.clone());
         let input = format!("x = {s}");
         let expr = Expression::try_from_text(&input);
         assert!(expr.is_ok());
@@ -53,8 +53,6 @@ def'"#,
 
         let res = evaluator.evaluate(&feat)?;
         assert!(matches!(res, Outcome::T));
-
-        evaluator.teardown()?
     }
 
     Ok(())

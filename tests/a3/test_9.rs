@@ -21,7 +21,7 @@
 //!
 
 use crate::utils::places;
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome};
+use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome};
 use std::error::Error;
 
 #[rustfmt::skip]
@@ -212,7 +212,7 @@ fn test() -> Result<(), Box<dyn Error>> {
         let exp = Expression::try_from_text(&input)?;
         // tracing::debug!("exp = {exp:?}");
 
-        let mut evaluator = EvaluatorImpl::new(shared_ctx.clone());
+        let mut evaluator = ExEvaluator::new(shared_ctx.clone());
         evaluator.setup(exp)?;
 
         let mut actual = 0;
@@ -227,8 +227,6 @@ fn test() -> Result<(), Box<dyn Error>> {
                 // tracing::debug!(":( --- {feat:?}\n");
             }
         }
-
-        evaluator.teardown()?;
 
         tracing::debug!("Predicate #{ndx} - actual / expected: {actual} / {expected}");
         assert_eq!(actual, *expected)

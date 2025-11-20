@@ -18,11 +18,10 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{COUNTRIES, harness};
+use crate::utils::{CountryCSV, CountryGPkg, harness, harness_gpkg, harness_sql};
 use std::error::Error;
-use tracing_test::traced_test;
 
-// Countries CSV data set contains 177 records...
+// Countries data set contains 177 records...
 #[rustfmt::skip]
 const PREDICATES: [(&str, u32); 4] = [
     ("S_WITHIN(geom,BBOX(-180,-90,180,90))",                               177),
@@ -32,7 +31,19 @@ const PREDICATES: [(&str, u32); 4] = [
 ];
 
 #[test]
-#[traced_test]
 fn test() -> Result<(), Box<dyn Error>> {
-    harness(COUNTRIES, PREDICATES.to_vec())
+    let ds = CountryCSV::new();
+    harness(ds, &PREDICATES)
+}
+
+#[tokio::test]
+async fn test_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = CountryGPkg::new().await?;
+    harness_gpkg(ds, &PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_sql() -> Result<(), Box<dyn Error>> {
+    let ds = CountryGPkg::new().await?;
+    harness_sql(ds, &PREDICATES).await
 }

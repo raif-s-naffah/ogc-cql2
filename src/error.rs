@@ -6,13 +6,17 @@
 //!
 
 use peg::{error::ParseError, str::LineCol};
-use std::borrow::Cow;
+use std::{
+    array::TryFromSliceError,
+    borrow::Cow,
+    num::{ParseIntError, TryFromIntError},
+};
 use thiserror::Error;
 
 /// Variants of error raised from this library.
 #[derive(Debug, Error)]
 pub enum MyError {
-    /// Input/Output realted error.
+    /// Input/Output related error.
     #[error("I/O error: {0}")]
     IO(#[from] std::io::Error),
 
@@ -28,7 +32,7 @@ pub enum MyError {
     #[error("Json [Try]From error: {0}")]
     Json(#[from] serde_json::Error),
 
-    /// Geometry (`geos`) related error.
+    /// GEOS related error.
     #[error("Geos error: {0}")]
     Geos(#[from] geos::Error),
 
@@ -47,4 +51,24 @@ pub enum MyError {
     /// Runtime error.
     #[error("Runtime error: {0}")]
     Runtime(Cow<'static, str>),
+
+    /// CSV error.
+    #[error("CSV error: {0}")]
+    CSV(#[from] csv::Error),
+
+    /// SqlX error.
+    #[error("SQLx error: {0}")]
+    SQL(#[from] sqlx::Error),
+
+    /// Byte-array to integer conversion error.
+    #[error("Conversion (bytes -> int) error: {0}")]
+    Conv(#[from] TryFromIntError),
+
+    /// String to integer conversion error.
+    #[error("Conversion (str -> int) error: {0}")]
+    Conv2(#[from] ParseIntError),
+
+    /// Byte-array to float conversion error.
+    #[error("Conversion (slice) error: {0}")]
+    Slice(#[from] TryFromSliceError),
 }

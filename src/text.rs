@@ -23,6 +23,7 @@ use crate::{
     expr::{Call, E},
     geom::{BBox, G, Geometries, Line, Lines, Point, Points, Polygon, Polygons},
     op::Op,
+    qstring::QString,
 };
 use jiff::Zoned;
 use jiff::{civil::Date, tz::TimeZone};
@@ -79,9 +80,6 @@ peg::parser! {
                 _ => E::Dyadic(Op::Or, Box::new(x), Box::new(E::Array(y))),
             }
         }
-
-        rule is_null() -> Op = i("IS") _ n:(i("NOT") _)? i("NULL")
-        { if n.is_none() { Op::IsNull } else { Op::IsNotNull } }
 
         rule or_term() -> E = i("OR") _ x:boolean_expression()  { x }
 
@@ -388,7 +386,10 @@ peg::parser! {
         / x:character_literal()                               { x }
 
         #[cache]
-        rule character_literal() -> E = "'" s:character()* "'" { E::Str(s.iter().collect()) }
+        rule character_literal() -> E = "'" s:character()* "'" {
+            let plain: String = s.iter().collect();
+            E::Str(QString::plain(plain))
+        }
 
         rule character() -> char
         = "''"            { '\'' }
@@ -505,17 +506,17 @@ peg::parser! {
         / g:multiline_tagd_txt() { g }
         / g:multipolygon_tagd_txt() { g }
 
-        rule point_tagd_txt() -> G = i("POINT") _ ("Z" _)? g:point_txt() { G::Point(Point::from(g)) }
+        rule point_tagd_txt() -> G = i("POINT") _ ("Z" _)? g:point_txt() { G::Point(Point::from_xy(g)) }
 
         rule point_txt() -> Vec<f64> = "(" _ x:point() _ ")" { x }
 
         rule point() -> Vec<f64> = x:signed_num() **<2, 3> ([' ' | '\t' | '\x0C']*) { x }
 
-        rule line_tagd_txt() -> G = i("LINESTRING") _ ("Z" _)? _ x:line_txt() { G::Line(Line::from(x)) }
+        rule line_tagd_txt() -> G = i("LINESTRING") _ ("Z" _)? _ x:line_txt() { G::Line(Line::from_xy(x)) }
 
         rule line_txt() -> Vec<Vec<f64>> = "(" _ x:point() **<2,> (_ "," _) _ ")" { x }
 
-        rule poly_tagd_txt() -> G = i("POLYGON") _ ("Z" _)? _ x:poly_txt() { G::Polygon(Polygon::from(x)) }
+        rule poly_tagd_txt() -> G = i("POLYGON") _ ("Z" _)? _ x:poly_txt() { G::Polygon(Polygon::from_xy(x)) }
 
         rule poly_txt() -> Vec<Vec<Vec<f64>>> = "(" _ x:ring_txt() ++ (_ "," _) _ ")" { x }
 
@@ -523,7 +524,7 @@ peg::parser! {
         rule ring_txt() -> Vec<Vec<f64>> = "(" _ x:point() **<4,> (_ "," _) _ ")" { x }
 
         rule multipoint_tagd_txt() -> G
-        = i("MULTIPOINT") _ ("Z" _)? x:multipoint_txt() { G::Points(Points::from(x)) }
+        = i("MULTIPOINT") _ ("Z" _)? x:multipoint_txt() { G::Points(Points::from_xy(x)) }
 
         // rule multipoint_txt() -> Vec<Vec<f64>> = "(" _ x:(point_txt() ++ (_ "," _)) _ ")" { x }
         rule multipoint_txt() -> Vec<Vec<f64>> = "(" _ x:(point_txt_forms() ++ (_ "," _)) _ ")" { x }
@@ -533,17 +534,17 @@ peg::parser! {
         / x:point()             { x}
 
         rule multiline_tagd_txt() -> G
-        = i("MULTILINESTRING") _ ("Z" _)? x:multiline_txt() { G::Lines(Lines::from(x)) }
+        = i("MULTILINESTRING") _ ("Z" _)? x:multiline_txt() { G::Lines(Lines::from_xy(x)) }
 
         rule multiline_txt() -> Vec<Vec<Vec<f64>>> = "(" _ x:(line_txt() ++ (_ "," _)) _ ")" { x }
 
         rule multipolygon_tagd_txt() -> G
-        = i("MULTIPOLYGON") _ ("Z" _)? x:multipolygon_txt() { G::Polygons(Polygons::from(x)) }
+        = i("MULTIPOLYGON") _ ("Z" _)? x:multipolygon_txt() { G::Polygons(Polygons::from_xy(x)) }
 
         rule multipolygon_txt() -> Vec<Vec<Vec<Vec<f64>>>> = "(" _ x:(poly_txt() ++ (_ "," _)) _ ")" { x }
 
         rule geo_collection_tagd_txt() -> G
-        = i("GEOMETRYCOLLECTION") _ ("Z" _)? x:geo_collection_txt() { G::Vec(Geometries::from(x)) }
+        = i("GEOMETRYCOLLECTION") _ ("Z" _)? x:geo_collection_txt() { G::Vec(Geometries::from_items(x)) }
 
         rule geo_collection_txt() -> Vec<G> = "(" _ x:(geo_literal() ++ (_ "," _)) _ ")" { x }
 
@@ -619,12 +620,10 @@ mod tests {
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_date() {
         const T: &str = "Date('2010-02-10')";
 
         let exp = temporal_expression(T);
-        // tracing::debug!("exp = {exp:?}");
         assert!(exp.is_ok());
         let t = exp.unwrap();
         assert!(matches!(t, E::Date(_)));
@@ -647,12 +646,10 @@ mod tests {
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_timestamp() {
         const T: &str = "TimeStamp('2012-08-10T05:30:00.123000Z')";
 
         let exp = temporal_expression(T);
-        // tracing::debug!("exp = {exp:?}");
         assert!(exp.is_ok());
         let t = exp.unwrap();
         assert!(matches!(t, E::Timestamp(_)));
@@ -664,7 +661,6 @@ mod tests {
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_precedence() {
         peg::parser! {
             pub grammar testing() for str {
@@ -762,28 +758,25 @@ mod tests {
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_character_expression() {
         const S1: &str = "%Foo%";
 
         let input = format!("'{S1}'");
         let exp = character_expression(&input);
-        // tracing::debug!("exp = {exp:?}");
         assert!(exp.is_ok());
         let c = exp.unwrap();
         assert!(matches!(c, E::Str(_)));
         let pattern = c.as_str().expect("Not a string");
-        assert_eq!(pattern, S1);
+        assert!(pattern.is_plain());
+        assert_eq!(pattern.as_str(), S1);
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_is_like_predicate() {
         const S1: &str = "%Bar%";
         const P: &str = "foo LIKE '%Bar%'";
 
         let exp = is_like_predicate(P);
-        // tracing::debug!("exp = {exp:?}");
         assert!(exp.is_ok());
         let c = exp.unwrap();
         assert!(matches!(c, E::Dyadic(Op::IsLike, _, _)));
@@ -792,17 +785,18 @@ mod tests {
         assert!(matches!(y, E::Str(_)));
 
         assert_eq!("foo", x.as_id().expect("Not a property name"));
-        assert_eq!(S1, y.as_str().expect("Not a string"));
+
+        let pattern = y.as_str().expect("Not a string");
+        assert!(pattern.is_plain());
+        assert_eq!(S1, pattern.as_str());
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_is_not_like_predicate() {
         const S1: &str = "_Foo%";
         const P: &str = "\"name\" NOT LIKE '_Foo%'";
 
         let exp = is_like_predicate(P);
-        // tracing::debug!("exp = {exp:?}");
         assert!(exp.is_ok());
         let c = exp.unwrap();
         assert!(matches!(c, E::Dyadic(Op::IsNotLike, _, _)));
@@ -811,25 +805,24 @@ mod tests {
         assert!(matches!(y, E::Str(_)));
 
         assert_eq!(r#""name""#, x.as_id().expect("Not a property name"));
-        assert_eq!(S1, y.as_str().expect("Not a string"));
+
+        let pattern = y.as_str().expect("Not a string");
+        assert!(pattern.is_plain());
+        assert_eq!(S1, pattern.as_str());
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_t_before() {
         const F: &str = r#"t_before(foo, date('2025-07-14'))"#;
 
         let f1 = expression(F);
-        // tracing::debug!("f1 = {f1:?}");
         assert!(f1.is_ok());
 
         let f2 = temporal_predicate(F);
-        // tracing::debug!("f2 = {f2:?}");
         assert!(f2.is_ok());
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_escape_apostophe() {
         const TV: [(&str, &str); 11] = [
             ("\'abcdef\'", "abcdef"),
@@ -853,14 +846,13 @@ def'"#,
             // build an expression using test vectors...
             let input = format!(r#"{s}"#);
             let exp = character_expression(&input);
-            // tracing::debug!("exp = {exp:?}");
             assert!(exp.is_ok());
             let e = exp.unwrap();
             let x = e.as_str();
             assert!(x.is_some());
             let actual = x.unwrap();
 
-            assert_eq!(actual, expected);
+            assert_eq!(actual.as_str(), expected);
         }
     }
 
@@ -912,13 +904,13 @@ def'"#,
             let cooked = format!("'{}'", escaped);
 
             let exp = character_expression(&cooked);
-            // tracing::debug!("exp = {exp}");
             let s_raw = String::from_iter(raw);
             match exp {
                 Ok(x) => {
                     let actual = x.as_str();
                     assert!(actual.is_some());
-                    assert_eq!(actual.unwrap(), s_raw);
+                    let actual_plain_str = actual.unwrap().as_str();
+                    assert_eq!(actual_plain_str, s_raw);
                 }
                 Err(x) => {
                     tracing::error!("Failed: {x}\n* raw\n|{s_raw}|,\n* escaped\n|{escaped}|");
@@ -930,7 +922,6 @@ def'"#,
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_combined1() {
         const F: &str = r#"
         (NOT (name<>'København') AND pop_other<>1038288) 
@@ -938,12 +929,10 @@ def'"#,
         or not (pop_other<>1038288 OR name<'København')"#;
 
         let expr = expression(F);
-        // tracing::debug!("expr = {expr:?}");
         assert!(expr.is_ok());
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_combined2() {
         // const F: &str = r#"(NOT (name<>'København') AND pop_other<>1038288) OR (pop_other IS NULL and name<'København') or not (pop_other<>1038288 OR name<'København')"#;
         // const F: &str = r#"(pop_other IS NULL and name<'København') or not (pop_other<>1038288 OR name<'København')"#;
@@ -963,7 +952,6 @@ def'"#,
     // w/ and w/o surrounding parens...
     // today i changed the PEG rules to allow both...
     #[test]
-    // #[tracing_test::traced_test]
     fn test_modified_multipoint() -> Result<(), Box<dyn Error>> {
         const E1: &str = "MULTIPOINT((7 50),(10 51))";
         const E2: &str = "MULTIPOINT(7 50, 10 51)";
@@ -973,7 +961,7 @@ def'"#,
         assert!(matches!(e1, G::Points(_)));
         match e1 {
             G::Points(mp1) => {
-                assert_eq!(mp1.size(), 2);
+                assert_eq!(mp1.num_points(), 2);
             }
             _ => panic!("Expected a multi-point geometry. Abort"),
         }
@@ -983,7 +971,7 @@ def'"#,
         assert!(matches!(e2, G::Points(_)));
         match e2 {
             G::Points(mp2) => {
-                assert_eq!(mp2.size(), 2);
+                assert_eq!(mp2.num_points(), 2);
             }
             _ => panic!("Expected a multi-point geometry. Abort"),
         }
@@ -992,17 +980,14 @@ def'"#,
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_current_precedence() -> Result<(), Box<dyn Error>> {
         // * has higher precedence compared to + so w/o parenthesis
         // a * b + c must be evaluated as (a * b) + c...
         const E: &str = "3013259 = 30*100000+13259";
 
         let expr = expression(E)?;
-        // tracing::debug!("expr = {expr:?}");
 
         let res = expr.eval(&Context::new(), &Resource::new())?;
-        // tracing::debug!("res = {res:?}");
         assert!(res.to_bool()?);
 
         Ok(())

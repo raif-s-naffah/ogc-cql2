@@ -38,12 +38,9 @@ impl PartialEq for Bound {
 impl Eq for Bound {}
 
 impl PartialOrd for Bound {
-    // Comparing values of this type are not straightforward since they can be
-    // one of 3 variants. If one or both of the arguments are unbounded the
-    // solution is trivial. It gets more elaborate when they are bounded...
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
-            // if both are unbounded, the result is alwas equal.
+            // if both are unbounded, the result is always equal.
             (Bound::None, Bound::None) => Some(Ordering::Equal),
             // if the LHS is unbounded and the RHS is not then the result is...
             (Bound::None, _) => Some(Ordering::Less),
@@ -53,7 +50,8 @@ impl PartialOrd for Bound {
             (Bound::Date(z1), Bound::Date(z2)) | (Bound::Timestamp(z1), Bound::Timestamp(z2)) => {
                 z1.partial_cmp(z2)
             }
-            // now the heavy metal...
+            // IMPORTANT (rsn) 202511-19 - just make sure they're date/time based;
+            // otherwise we may run into stack overflow
             (Bound::Date(z1), Bound::Timestamp(z2)) | (Bound::Timestamp(z1), Bound::Date(z2)) => {
                 z1.partial_cmp(z2)
             }
@@ -149,30 +147,25 @@ mod tests {
     use super::*;
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_bound() {
         const D: &str = "2015-01-01";
         const T: &str = "2015-01-01T00:00:00Z";
 
         let d = Bound::try_new_date(D);
-        // tracing::debug!("d = {d:?}");
         assert!(d.is_ok());
         let b1 = d.unwrap();
         assert!(!b1.is_unbound());
         let b1_ = b1.as_zoned();
         assert!(b1_.is_some());
         let z1 = b1_.unwrap();
-        // tracing::debug!("z1 = {z1:?}");
 
         let t = Bound::try_new_timestamp(T);
-        // tracing::debug!("t = {t:?}");
         assert!(t.is_ok());
         let b2 = t.unwrap();
         assert!(!b2.is_unbound());
         let b2_ = b2.as_zoned();
         assert!(b2_.is_some());
         let z2 = b2_.unwrap();
-        // tracing::debug!("z2 = {z2:?}");
 
         assert_eq!(z1, z2);
         assert!(z1 == z2);

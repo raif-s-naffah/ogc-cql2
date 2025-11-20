@@ -14,7 +14,9 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{COUNTRIES, PLACES, harness};
+use crate::utils::{
+    CountryCSV, CountryGPkg, PlaceCSV, PlaceGPkg, harness, harness_gpkg, harness_sql,
+};
 use std::error::Error;
 use tracing_test::traced_test;
 
@@ -82,11 +84,38 @@ const PLACES_PREDICATES: [(&str, u32); 36] = [
 #[test]
 #[traced_test]
 fn test_countries() -> Result<(), Box<dyn Error>> {
-    harness(COUNTRIES, COUNTRIES_PREDICATES.to_vec())
+    let ds = CountryCSV::new();
+    harness(ds, &COUNTRIES_PREDICATES)
+}
+
+#[tokio::test]
+#[traced_test]
+async fn test_countries_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = CountryGPkg::new().await?;
+    harness_gpkg(ds, &COUNTRIES_PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_countries_sql() -> Result<(), Box<dyn Error>> {
+    let ds = CountryGPkg::new().await?;
+    harness_sql(ds, &COUNTRIES_PREDICATES).await
 }
 
 #[test]
 #[traced_test]
 fn test_places() -> Result<(), Box<dyn Error>> {
-    harness(PLACES, PLACES_PREDICATES.to_vec())
+    let ds = PlaceCSV::new();
+    harness(ds, &PLACES_PREDICATES)
+}
+
+#[tokio::test]
+async fn test_places_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceGPkg::new().await?;
+    harness_gpkg(ds, &PLACES_PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_places_sql() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceGPkg::new().await?;
+    harness_sql(ds, &PLACES_PREDICATES).await
 }

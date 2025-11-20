@@ -13,7 +13,10 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{COUNTRIES, PLACES, RIVERS, harness};
+use crate::utils::{
+    CountryCSV, CountryGPkg, PlaceCSV, PlaceGPkg, RiverCSV, RiverGPkg, harness, harness_gpkg,
+    harness_sql,
+};
 use std::error::Error;
 
 #[rustfmt::skip]
@@ -59,6 +62,7 @@ const PLACES_PREDICATES: [(&str, u32); 76] = [
     ("S_DISJOINT(POLYGON((0 40,10 40,10 50,0 50,0 40)),geom)",    236),
     ("S_EQUALS(POINT(6.1300028 49.6116604),geom)",                  1),
     ("S_CONTAINS(BBOX(-180,-90,0,90),geom)",                       74),
+
     (r#"t_after(date('2022-04-16'),"date")"#,                       1),
     (r#"t_before(date('2022-04-16'),"date")"#,                      1),
     (r#"t_disjoint(date('2022-04-16'),"date")"#,                    2),
@@ -126,7 +130,6 @@ const COUNTRIES_PREDICATES: [(&str, u32); 18] = [
     ("S_WITHIN(LINESTRING(7 50,8 51),geom)",          1),
     ("S_WITHIN(POINT(7.02 49.92),geom)",              1),
     ("S_OVERLAPS(BBOX(-180,-90,0,90),geom)",         11),
-
 ];
 
 #[rustfmt::skip]
@@ -142,15 +145,86 @@ const RIVERS_PREDICATES: [(&str, u32); 7] = [
 
 #[test]
 fn test_places() -> Result<(), Box<dyn Error>> {
-    harness(PLACES, PLACES_PREDICATES.to_vec())
+    let ds = PlaceCSV::new();
+    harness(ds, &PLACES_PREDICATES)
+}
+
+#[tokio::test]
+async fn test_places_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceGPkg::new().await?;
+    harness_gpkg(ds, &PLACES_PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_places_sql() -> Result<(), Box<dyn Error>> {
+    let gpkg = PlaceGPkg::new().await?;
+    harness_sql(gpkg, &PLACES_PREDICATES).await
 }
 
 #[test]
+#[tracing_test::traced_test]
 fn test_countries() -> Result<(), Box<dyn Error>> {
-    harness(COUNTRIES, COUNTRIES_PREDICATES.to_vec())
+    let ds = CountryCSV::new();
+    harness(ds, &COUNTRIES_PREDICATES)
+}
+
+#[tokio::test]
+async fn test_countries_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = CountryGPkg::new().await?;
+    harness_gpkg(ds, &COUNTRIES_PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_countries_sql() -> Result<(), Box<dyn Error>> {
+    #[rustfmt::skip]
+    const COUNTRIES_PREDICATES: [(&str, u32); 14] = [
+        ("S_INTERSECTS(BBOX(0,40,10,50),geom)",                      8),
+        ("S_INTERSECTS(BBOX(150,-90,-150,90),geom)",                10),
+        ("S_INTERSECTS(POINT(7.02 49.92),geom)",                     1),
+        ("S_INTERSECTS(POLYGON((0 40,10 40,10 50,0 50,0 40)),geom)", 8),
+        ("S_INTERSECTS(LINESTRING(0 40,10 50),geom)",                4),
+        ("S_DISJOINT(BBOX(0,40,10,50),geom)",                      169),
+        ("S_DISJOINT(POLYGON((0 40,10 40,10 50,0 50,0 40)),geom)", 169),
+        ("S_DISJOINT(LINESTRING(0 40,10 50),geom)",                173),
+        ("S_DISJOINT(POINT(7.02 49.92),geom)",                     176),
+        // (r#"S_TOUCHES(POLYGON((
+        //     6.043073357781111 50.128051662794235,
+        //     6.242751092156993 49.90222565367873,
+        //     6.186320428094177 49.463802802114515,
+        //     5.897759230176348 49.44266714130711,
+        //     5.674051954784829 49.529483547557504,
+        //     5.782417433300907 50.09032786722122,
+        //     6.043073357781111 50.128051662794235)),geom)"#,             3),
+        // ("S_TOUCHES(POINT(6.043073357781111 50.128051662794235),geom)", 3),
+        // ("S_TOUCHES(POINT(6.242751092156993 49.90222565367873),geom)",  2),
+        // (r#"S_TOUCHES(LINESTRING(
+        //     6.043073357781111 50.128051662794235,
+        //     6.242751092156993 49.90222565367873),geom)"#, 3),
+        ("S_CONTAINS(BBOX(-180,-90,0,90),geom)",         44),
+        ("S_WITHIN(BBOX(7,50,8,51),geom)",                1),
+        ("S_WITHIN(LINESTRING(7 50,8 51),geom)",          1),
+        ("S_WITHIN(POINT(7.02 49.92),geom)",              1),
+        ("S_OVERLAPS(BBOX(-180,-90,0,90),geom)",         11),
+    ];
+
+    let gpkg = CountryGPkg::new().await?;
+    harness_sql(gpkg, &COUNTRIES_PREDICATES).await
 }
 
 #[test]
 fn test_rivers() -> Result<(), Box<dyn Error>> {
-    harness(RIVERS, RIVERS_PREDICATES.to_vec())
+    let ds = RiverCSV::new();
+    harness(ds, &RIVERS_PREDICATES)
+}
+
+#[tokio::test]
+async fn test_rivers_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = RiverGPkg::new().await?;
+    harness_gpkg(ds, &RIVERS_PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_rivers_sql() -> Result<(), Box<dyn Error>> {
+    let gpkg = RiverGPkg::new().await?;
+    harness_sql(gpkg, &RIVERS_PREDICATES).await
 }

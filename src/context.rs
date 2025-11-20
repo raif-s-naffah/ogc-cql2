@@ -74,7 +74,7 @@ impl Context {
     /// Return a safe share-able read-only version of this frozen at the time
     /// of the call.
     pub fn freeze(self) -> SharedContext {
-        Rc::new(self) //.clone()
+        Rc::new(self)
     }
 
     /// Return a reference to the currently set CRS w/in this.

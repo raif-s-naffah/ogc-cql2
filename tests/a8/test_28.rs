@@ -35,7 +35,7 @@
 //! BNF, will look like so `MULTIPOINT((7.02 49.92), (90 180))`.
 //!
 
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, MyError, Outcome, Q, Resource};
+use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, MyError, Outcome, Q, Resource};
 use std::error::Error;
 use tracing_test::traced_test;
 
@@ -59,7 +59,7 @@ fn test_e1_invalid_coordinates() -> Result<(), Box<dyn Error>> {
 
     let expr = Expression::try_from_text(E)?;
     let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx);
+    let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
 
     // single point; one of the pair specified in the expresion.
@@ -99,7 +99,7 @@ fn test_e2() -> Result<(), Box<dyn Error>> {
 
     let expr = Expression::try_from_text(E)?;
     let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx);
+    let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
 
     for (n, wkt) in PASS.iter().enumerate() {
@@ -159,7 +159,7 @@ fn test_e3() -> Result<(), Box<dyn Error>> {
 
     let expr = Expression::try_from_text(E)?;
     let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx);
+    let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
 
     for (n, wkt) in PASS.iter().enumerate() {
@@ -218,7 +218,7 @@ fn test_e4() -> Result<(), Box<dyn Error>> {
 
     let expr = Expression::try_from_text(E)?;
     let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx);
+    let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
 
     for (n, wkt) in PASS.iter().enumerate() {
@@ -281,7 +281,7 @@ fn test_e5() -> Result<(), Box<dyn Error>> {
 
     let expr = Expression::try_from_text(E)?;
     let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx);
+    let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
 
     for (n, wkt) in PASS.iter().enumerate() {
@@ -344,7 +344,7 @@ fn test_e6() -> Result<(), Box<dyn Error>> {
 
     let expr = Expression::try_from_text(E)?;
     let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx);
+    let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
 
     for (n, wkt) in PASS.iter().enumerate() {

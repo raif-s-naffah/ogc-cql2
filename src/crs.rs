@@ -9,14 +9,15 @@
 use crate::{MyError, config::config};
 use core::fmt;
 use proj::Proj;
+use std::{num::NonZero, ops::RangeInclusive};
 use tracing::info;
 
 #[derive(Debug)]
 struct EoV {
-    /// horizontal or longitudinal extent bounds.
-    x_range: (f64, f64),
-    /// vertical or latitudinal extent bounds.
-    y_range: (f64, f64),
+    /// horizontal/longitudinal/easting extent bounds.
+    x_range: RangeInclusive<f64>,
+    /// vertical/latitudinal/northing extent bounds.
+    y_range: RangeInclusive<f64>,
 }
 
 /// Representation of a Coordinate Reference System
@@ -27,8 +28,6 @@ pub struct CRS {
     inner: Proj,
     extent_of_validity: EoV,
 }
-
-// FIXME (rsn) 20250807 - add LRU cache to store instances + reduce duplication.
 
 impl fmt::Display for CRS {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -56,8 +55,8 @@ impl CRS {
         // for now reject input w/ no known validity-extent bounds...
         let eov = mb_eov.expect("CRSes w/ no known Area-of-Use are not supported. Abort");
         let extent_of_validity = EoV {
-            x_range: (eov.west, eov.east),
-            y_range: (eov.south, eov.north),
+            x_range: RangeInclusive::new(eov.west, eov.east),
+            y_range: RangeInclusive::new(eov.south, eov.north),
         };
         let crs = CRS {
             definition,
@@ -65,25 +64,25 @@ impl CRS {
             extent_of_validity,
         };
 
-        // FIXME - cache it...
-
         Ok(crs)
+    }
+
+    /// Construct a new instance from the given code assuming EPSG Authority
+    /// if it's a valid one (known by Proj).
+    pub fn from_epsg(code: NonZero<usize>) -> Result<Self, MyError> {
+        Self::new(&format!("EPSG:{code}"))
     }
 
     /// Check if the given point coordinates are w/in the area-of-validity of this.
     pub fn check_point(&self, coord: &[f64]) -> Result<(), MyError> {
         // FIXME (rsn) 2250807 - so far we only handle 2D coordinates...
         let (x, y) = (&coord[0], &coord[1]);
-        let (x_min, x_max) = self.extent_of_validity.x_range;
-        let x_ok = *x >= x_min && *x <= x_max;
-        if !x_ok {
+        if !self.extent_of_validity.x_range.contains(x) {
             return Err(MyError::Runtime(
                 "Point x (longitude) coordinate is out-of-bounds".into(),
             ));
         }
-        let (y_min, y_max) = self.extent_of_validity.y_range;
-        let y_ok = *y >= y_min && *y <= y_max;
-        if !y_ok {
+        if !self.extent_of_validity.y_range.contains(y) {
             return Err(MyError::Runtime(
                 "Point y (latitude) coordinate is out-of-bounds".into(),
             ));
@@ -117,16 +116,11 @@ impl CRS {
 #[cfg(test)]
 mod tests {
     use proj::Proj;
-    use tracing_test::traced_test;
 
     #[test]
-    #[traced_test]
     fn test_name() {
         let epsg_4326 = Proj::new("EPSG:4326").unwrap();
-        // tracing::debug!("EPSG:4326 = {epsg_4326:?}");
-
         let (aou, _) = epsg_4326.area_of_use().unwrap();
-        // tracing::debug!("EPSG:4326 area of use = {aou:?}");
 
         if let Some(a) = aou {
             assert_eq!(a.west, -180.0);

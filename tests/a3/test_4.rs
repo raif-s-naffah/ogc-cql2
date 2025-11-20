@@ -19,7 +19,7 @@
 //!   type String, Boolean, Number, Integer, Timestamp or Date.
 //!
 
-use ogc_cql2::{Bound, Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
+use ogc_cql2::{Bound, Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use std::error::Error;
 use tracing_test::traced_test;
 
@@ -32,7 +32,7 @@ fn test_boolean() -> Result<(), Box<dyn Error>> {
     let expr = Expression::try_from_text(F)?;
     // instantiate an evaluator + set it up...
     let shared_ctx = Context::new().freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx);
+    let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
 
     // make 3 features w/ the correct named property and data-type.
@@ -70,7 +70,6 @@ fn test_boolean() -> Result<(), Box<dyn Error>> {
     tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::N));
 
-    evaluator.teardown()?;
     Ok(())
 }
 
@@ -81,7 +80,7 @@ fn test_num() -> Result<(), Box<dyn Error>> {
 
     let expr = Expression::try_from_text(F)?;
     let shared_ctx = Context::new().freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx);
+    let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
 
     let f1 = Resource::from([
@@ -108,7 +107,6 @@ fn test_num() -> Result<(), Box<dyn Error>> {
     // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::N));
 
-    evaluator.teardown()?;
     Ok(())
 }
 
@@ -119,7 +117,7 @@ fn test_string() -> Result<(), Box<dyn Error>> {
 
     let expr = Expression::try_from_text(F)?;
     let shared_ctx = Context::new().freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx);
+    let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
 
     let f1 = Resource::from([
@@ -146,7 +144,6 @@ fn test_string() -> Result<(), Box<dyn Error>> {
     // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::N));
 
-    evaluator.teardown()?;
     Ok(())
 }
 
@@ -157,7 +154,7 @@ fn test_instant() -> Result<(), Box<dyn Error>> {
 
     let expr = Expression::try_from_text(F)?;
     let shared_ctx = Context::new().freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx);
+    let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
 
     const D1: &str = "2015-01-01";
@@ -187,7 +184,6 @@ fn test_instant() -> Result<(), Box<dyn Error>> {
     // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::N));
 
-    evaluator.teardown()?;
     Ok(())
 }
 
@@ -199,7 +195,7 @@ fn test_interval() -> Result<(), Box<dyn Error>> {
 
     let expr = Expression::try_from_text(F)?;
     let shared_ctx = Context::new().freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx);
+    let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
 
     const T1: &str = "2017-06-11T08:30:00Z";
@@ -233,7 +229,6 @@ fn test_interval() -> Result<(), Box<dyn Error>> {
     // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::N));
 
-    evaluator.teardown()?;
     Ok(())
 }
 
@@ -244,7 +239,7 @@ fn test_point_and_polygon() -> Result<(), Box<dyn Error>> {
 
     let expr = Expression::try_from_text(F)?;
     let shared_ctx = Context::new().freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx);
+    let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
 
     const BALSAS: &str = "POINT(-46.03556 -7.5325)";
@@ -273,7 +268,6 @@ fn test_point_and_polygon() -> Result<(), Box<dyn Error>> {
     // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::N));
 
-    evaluator.teardown()?;
     Ok(())
 }
 
@@ -284,7 +278,7 @@ fn test_line() -> Result<(), Box<dyn Error>> {
 
     let expr = Expression::try_from_text(F)?;
     let shared_ctx = Context::new().freeze();
-    let mut evaluator = EvaluatorImpl::new(shared_ctx);
+    let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
 
     const L1: &str = "LINESTRING(-46.03556 -7.5325, 151.22322 -33.74821)";
@@ -313,6 +307,5 @@ fn test_line() -> Result<(), Box<dyn Error>> {
     // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::N));
 
-    evaluator.teardown()?;
     Ok(())
 }

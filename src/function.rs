@@ -5,9 +5,8 @@
 //! Expressions evaluation context.
 //!
 
-use crate::{Context, QString};
+use crate::{Context, G, GTrait, QString};
 use core::fmt;
-use geos::{Geom, Geometry};
 use jiff::{Zoned, tz::TimeZone};
 use std::any::Any;
 
@@ -46,7 +45,6 @@ pub struct FnInfo {
 impl fmt::Debug for FnInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("FnInfo")
-            // .field("z_fn", &self.z_fn)
             .field("arg_types", &self.arg_types)
             .field("return_type", &self.result_type)
             .finish()
@@ -305,103 +303,104 @@ pub(crate) fn add_builtins(ctx: &mut Context) {
     });
 
     // spatial builtins...
-    let boundary = |x: &Geometry| x.boundary().expect("Failed finding boundary");
+    let boundary = |x: &G| x.boundary().expect("Failed finding boundary");
     ctx.register(
         "boundary",
         vec![ExtDataType::Geom],
         ExtDataType::Geom,
         move |args| {
-            let x = args.first()?.downcast_ref::<Geometry>()?;
+            let x = args.first()?.downcast_ref::<G>()?;
             Some(Box::new(boundary(x)))
         },
     );
 
-    let buffer = |x: &Geometry, y: &f64| x.buffer(*y, 8).expect("Failed computing buffer");
+    let buffer = |x: &G, y: &f64| x.buffer(*y, 8).expect("Failed computing buffer");
     ctx.register(
         "buffer",
         vec![ExtDataType::Geom, ExtDataType::Num],
         ExtDataType::Geom,
         move |args| {
-            let x = args.first()?.downcast_ref::<Geometry>()?;
+            let x = args.first()?.downcast_ref::<G>()?;
             let y = args.get(1)?.downcast_ref::<f64>()?;
             Some(Box::new(buffer(x, y)))
         },
     );
 
-    let envelope = |x: &Geometry| x.envelope().expect("Failed finding envelope");
+    let envelope = |x: &G| x.envelope().expect("Failed finding envelope");
     ctx.register(
         "envelope",
         vec![ExtDataType::Geom],
         ExtDataType::Geom,
         move |args| {
-            let x = args.first()?.downcast_ref::<Geometry>()?;
+            let x = args.first()?.downcast_ref::<G>()?;
             Some(Box::new(envelope(x)))
         },
     );
 
-    let centroid = |x: &Geometry| x.get_centroid().expect("Failed finding centroid");
+    let centroid = |x: &G| x.centroid().expect("Failed finding centroid");
     ctx.register(
         "centroid",
         vec![ExtDataType::Geom],
         ExtDataType::Geom,
         move |args| {
-            let x = args.first()?.downcast_ref::<Geometry>()?;
+            let x = args.first()?.downcast_ref::<G>()?;
             Some(Box::new(centroid(x)))
         },
     );
 
-    let convex_hull = |x: &Geometry| x.convex_hull().expect("Failed finding convex hull");
+    let convex_hull = |x: &G| x.convex_hull().expect("Failed finding convex hull");
     ctx.register(
         "convex_hull",
         vec![ExtDataType::Geom],
         ExtDataType::Geom,
         move |args| {
-            let x = args.first()?.downcast_ref::<Geometry>()?;
+            let x = args.first()?.downcast_ref::<G>()?;
             Some(Box::new(convex_hull(x)))
         },
     );
 
-    let get_x = |x: &Geometry| x.get_x().expect("Failed isolating X");
+    let get_x = |x: &G| x.get_x().expect("Failed isolating X");
     ctx.register(
         "get_x",
         vec![ExtDataType::Geom],
         ExtDataType::Num,
         move |args| {
-            let x = args.first()?.downcast_ref::<Geometry>()?;
+            let x = args.first()?.downcast_ref::<G>()?;
             Some(Box::new(get_x(x)))
         },
     );
 
-    let get_y = |x: &Geometry| x.get_y().expect("Failed isolating Y");
+    let get_y = |x: &G| x.get_y().expect("Failed isolating Y");
     ctx.register(
         "get_y",
         vec![ExtDataType::Geom],
         ExtDataType::Num,
         move |args| {
-            let x = args.first()?.downcast_ref::<Geometry>()?;
+            let x = args.first()?.downcast_ref::<G>()?;
             Some(Box::new(get_y(x)))
         },
     );
 
-    let get_z = |x: &Geometry| x.get_y().expect("Failed isolating Z");
+    let get_z = |x: &G| x.get_z().expect("Failed isolating Z");
     ctx.register(
         "get_z",
         vec![ExtDataType::Geom],
         ExtDataType::Num,
         move |args| {
-            let x = args.first()?.downcast_ref::<Geometry>()?;
+            let x = args.first()?.downcast_ref::<G>()?;
             Some(Box::new(get_z(x)))
         },
     );
 
-    let wkt = |x: &Geometry| x.to_wkt().expect("Failed generating WKT");
+    let wkt = |x: &G, p: &f64| x.to_wkt_fmt(*p as usize);
     ctx.register(
         "wkt",
-        vec![ExtDataType::Geom],
+        vec![ExtDataType::Geom, ExtDataType::Num],
         ExtDataType::Str,
         move |args| {
-            let x = args.first()?.downcast_ref::<Geometry>()?;
-            Some(Box::new(wkt(x)))
+            let x = args.first()?.downcast_ref::<G>()?;
+            let p = args.get(1)?.downcast_ref::<f64>()?;
+            Some(Box::new(wkt(x, p)))
         },
     );
 }
@@ -413,26 +412,21 @@ mod tests {
     use std::error::Error;
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_unregistered() -> Result<(), Box<dyn Error>> {
         let shared_ctx = Context::new().freeze();
 
         let expr = Expression::try_from_text("sum(a, b)")?;
-        let mut eval = EvaluatorImpl::new(shared_ctx);
+        let mut eval = ExEvaluator::new(shared_ctx);
         eval.setup(expr)?;
 
         let feat = Resource::new();
         let res = eval.evaluate(&feat)?;
-        // tracing::debug!("res = {res:?}");
         assert!(matches!(res, Outcome::N));
-
-        eval.teardown()?;
 
         Ok(())
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_literals() -> Result<(), Box<dyn Error>> {
         let sum = |x: f64, y: f64| x + y;
 
@@ -450,22 +444,18 @@ mod tests {
         let shared_ctx = ctx.freeze();
 
         let expr = Expression::try_from_text("3 = sum(1, 2)")?;
-        let mut eval = EvaluatorImpl::new(shared_ctx);
+        let mut eval = ExEvaluator::new(shared_ctx);
         eval.setup(expr)?;
 
         let feat = Resource::new();
 
         let res = eval.evaluate(&feat)?;
-        // tracing::debug!("res = {res:?}");
         assert!(matches!(res, Outcome::T));
-
-        eval.teardown()?;
 
         Ok(())
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_queryables() -> Result<(), Box<dyn Error>> {
         let sum = |x: f64, y: f64| x + y;
 
@@ -483,7 +473,7 @@ mod tests {
         let shared_ctx = ctx.freeze();
 
         let expr = Expression::try_from_text("30 = sum(a, b)")?;
-        let mut eval = EvaluatorImpl::new(shared_ctx);
+        let mut eval = ExEvaluator::new(shared_ctx);
         eval.setup(expr)?;
 
         let feat = Resource::from([
@@ -493,16 +483,12 @@ mod tests {
         ]);
 
         let res = eval.evaluate(&feat)?;
-        // tracing::debug!("res = {res:?}");
         assert!(matches!(res, Outcome::T));
-
-        eval.teardown()?;
 
         Ok(())
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_wrong_data_type() -> Result<(), Box<dyn Error>> {
         let sum = |x: f64, y: f64| x + y;
 
@@ -520,7 +506,7 @@ mod tests {
         let shared_ctx = ctx.freeze();
 
         let expr = Expression::try_from_text("30 = sum(a, b)")?;
-        let mut eval = EvaluatorImpl::new(shared_ctx);
+        let mut eval = ExEvaluator::new(shared_ctx);
         eval.setup(expr)?;
 
         let feat = Resource::from([
@@ -530,23 +516,19 @@ mod tests {
         ]);
 
         let res = eval.evaluate(&feat);
-        // tracing::debug!("res = {res:?}");
         assert!(res.is_err());
-
-        eval.teardown()?;
 
         Ok(())
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_num_builtins() -> Result<(), Box<dyn Error>> {
         let mut ctx = Context::new();
         ctx.register_builtins();
         let shared_ctx = ctx.freeze();
 
         let expr = Expression::try_from_text("min(a, b) + max(a, b) = 2 * avg(a, b)")?;
-        let mut eval = EvaluatorImpl::new(shared_ctx);
+        let mut eval = ExEvaluator::new(shared_ctx);
         eval.setup(expr)?;
 
         let feat = Resource::from([
@@ -556,14 +538,12 @@ mod tests {
         ]);
 
         let res = eval.evaluate(&feat)?;
-        // tracing::debug!("res = {res:?}");
         assert!(matches!(res, Outcome::T));
 
         Ok(())
     }
 
     #[test]
-    // #[tracing_test::traced_test]
     fn test_geom_builtins() -> Result<(), Box<dyn Error>> {
         // IMPORTANT (rsn) 20250901 - if we rely on Context::new() we leave
         // the context subject to the global configuration which may be using
@@ -574,29 +554,27 @@ mod tests {
         let shared_ctx = ctx.freeze();
 
         let expr = Expression::try_from_text(
-            "wkt(centroid(envelope(MULTIPOINT(0 90, 90 0)))) = 'POINT (45 45)'",
+            "wkt(centroid(envelope(MULTIPOINT(0 90, 90 0))), 0) = 'POINT (45 45)'",
         )?;
-        let mut eval = EvaluatorImpl::new(shared_ctx);
+        let mut eval = ExEvaluator::new(shared_ctx);
         eval.setup(expr)?;
 
         let feat = Resource::new();
 
         let res = eval.evaluate(&feat)?;
-        // tracing::debug!("res = {res:?}");
         assert!(matches!(res, Outcome::T));
 
         Ok(())
     }
 
     #[test]
-    #[tracing_test::traced_test]
     fn test_str_builtins() -> Result<(), Box<dyn Error>> {
         let mut ctx = Context::new();
         ctx.register_builtins();
         let shared_ctx = ctx.freeze();
 
         let expr = Expression::try_from_text("starts_with(concat('foo', 'bar'), 'fo')")?;
-        let mut eval = EvaluatorImpl::new(shared_ctx);
+        let mut eval = ExEvaluator::new(shared_ctx);
         eval.setup(expr)?;
 
         let feat = Resource::new();

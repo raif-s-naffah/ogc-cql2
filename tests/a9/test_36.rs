@@ -20,12 +20,14 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{COUNTRIES, countries, harness};
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome};
+use crate::utils::{
+    CountryCSV, CountryGPkg, countries, countries_gpkg, harness, harness_gpkg, harness_sql,
+};
+use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome};
 use std::error::Error;
 use tracing_test::traced_test;
 
-// Countries CSV data set contains 177 records...
+// Countries data set contains 177 records...
 #[rustfmt::skip]
 const CONTAINS: [(&str, u32); 4] = [
     ("S_CONTAINS(geom,BBOX(-180,-90,180,90))",                               0),
@@ -43,13 +45,39 @@ const WITHIN: [(&str, u32); 2] = [
 #[test]
 #[traced_test]
 fn test_contains() -> Result<(), Box<dyn Error>> {
-    harness(COUNTRIES, CONTAINS.to_vec())
+    let ds = CountryCSV::new();
+    harness(ds, &CONTAINS)
+}
+
+#[tokio::test]
+async fn test_contains_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = CountryGPkg::new().await?;
+    harness_gpkg(ds, &CONTAINS).await
+}
+
+#[tokio::test]
+async fn test_contains_sql() -> Result<(), Box<dyn Error>> {
+    let ds = CountryGPkg::new().await?;
+    harness_sql(ds, &CONTAINS).await
 }
 
 #[test]
 #[traced_test]
 fn test_within() -> Result<(), Box<dyn Error>> {
-    harness(COUNTRIES, WITHIN.to_vec())
+    let ds = CountryCSV::new();
+    harness(ds, &WITHIN)
+}
+
+#[tokio::test]
+async fn test_within_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = CountryGPkg::new().await?;
+    harness_gpkg(ds, &WITHIN).await
+}
+
+#[tokio::test]
+async fn test_within_sql() -> Result<(), Box<dyn Error>> {
+    let ds = CountryGPkg::new().await?;
+    harness_sql(ds, &WITHIN).await
 }
 
 #[test]
@@ -60,13 +88,41 @@ fn test_e3() -> Result<(), Box<dyn Error>> {
 
     let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
     let expr1 = Expression::try_from_text(E1)?;
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
     let expr2 = Expression::try_from_text(E2)?;
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     for c in countries()? {
+        // any geometry cannot satisfy both expressions simultaneously
+        let res1 = evaluator1.evaluate(&c)?;
+        let res2 = evaluator2.evaluate(&c)?;
+        match (res1, res2) {
+            (Outcome::T, Outcome::T) => {
+                panic!("Unexpected result: {c:?}")
+            }
+            _ => (),
+        }
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_e3_gpkg() -> Result<(), Box<dyn Error>> {
+    const E1: &str = "S_CONTAINS(geom,LINESTRING(7 50,10 51))";
+    const E2: &str = "S_WITHIN(geom,LINESTRING(7 50,10 51))";
+
+    let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
+    let expr1 = Expression::try_from_text(E1)?;
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
+    evaluator1.setup(expr1)?;
+    let expr2 = Expression::try_from_text(E2)?;
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
+    evaluator2.setup(expr2)?;
+
+    for c in countries_gpkg().await? {
         // any geometry cannot satisfy both expressions simultaneously
         let res1 = evaluator1.evaluate(&c)?;
         let res2 = evaluator2.evaluate(&c)?;
@@ -89,13 +145,41 @@ fn test_e4() -> Result<(), Box<dyn Error>> {
 
     let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
     let expr1 = Expression::try_from_text(E1)?;
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
     let expr2 = Expression::try_from_text(E2)?;
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     for c in countries()? {
+        // any geometry cannot satisfy both expressions simultaneously
+        let res1 = evaluator1.evaluate(&c)?;
+        let res2 = evaluator2.evaluate(&c)?;
+        match (res1, res2) {
+            (Outcome::T, Outcome::T) => {
+                panic!("Unexpected result: {c:?}")
+            }
+            _ => (),
+        }
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_e4_gpkg() -> Result<(), Box<dyn Error>> {
+    const E1: &str = "S_CONTAINS(geom,MULTIPOINT((7 50),(10 51)))";
+    const E2: &str = "S_WITHIN(geom,MULTIPOINT((7 50),(10 51)))";
+
+    let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
+    let expr1 = Expression::try_from_text(E1)?;
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
+    evaluator1.setup(expr1)?;
+    let expr2 = Expression::try_from_text(E2)?;
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
+    evaluator2.setup(expr2)?;
+
+    for c in countries_gpkg().await? {
         // any geometry cannot satisfy both expressions simultaneously
         let res1 = evaluator1.evaluate(&c)?;
         let res2 = evaluator2.evaluate(&c)?;

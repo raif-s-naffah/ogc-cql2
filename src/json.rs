@@ -4133,6 +4133,7 @@ impl From<f64> for NumericExpression {
 #[doc = "}"]
 #[doc = r" ```"]
 #[doc = r" </details>"]
+#[allow(dead_code)]
 #[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(untagged)]
 pub(crate) enum PatternExpression {

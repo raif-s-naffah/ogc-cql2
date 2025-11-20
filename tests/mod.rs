@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Annex A: Abstract Test Suite (Normative)
-//! 
+//!
 //! https://docs.ogc.org/is/21-065r2/21-065r2.html#ats
-//! 
+//!
 
-// Common test harnesses, utility functions and CSV test data Resource
-// structures.
+// Common test harnesses, utility functions and test data Resource structures.
 mod utils;
 
 /// Simple runners that ingest both test- and JSON-encoded 'sample' files

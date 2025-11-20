@@ -46,7 +46,7 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{PLACES, harness};
+use crate::utils::{PlaceCSV, PlaceGPkg, harness, harness_gpkg, harness_sql};
 use std::error::Error;
 
 #[rustfmt::skip]
@@ -70,31 +70,55 @@ const TIMESTAMP_PREDICATES: [(&str, u32); 15] = [
 
 #[rustfmt::skip]
 const DATE_PREDICATES: [(&str, u32); 15] = [
-    ("T_AFTER(INTERVAL(date,'..'),INTERVAL(       '2021-01-01','2021-12-31'))", 2),
-    ("T_BEFORE(INTERVAL(date,'..'),INTERVAL(      '2021-01-01','2021-12-31'))", 3),
-    ("T_DISJOINT(INTERVAL(date,'..'),INTERVAL(    '2021-01-01','2021-12-31'))", 3),
-    ("T_EQUALS(INTERVAL(date,'..'),INTERVAL(      '2021-01-01','2021-12-31'))", 0),
-    ("T_INTERSECTS(INTERVAL(date,'..'),INTERVAL(  '2021-01-01','2021-12-31'))", 0),
-    ("T_CONTAINS(INTERVAL(date,'..'),INTERVAL(    '2021-01-01','2021-12-31'))", 0),
-    ("T_DURING(INTERVAL(date,'..'),INTERVAL(      '2021-01-01','2021-12-31'))", 3),
-    ("T_FINISHEDBY(INTERVAL(date,'..'),INTERVAL(  '2021-01-01','2021-12-31'))", 0),
-    ("T_FINISHES(INTERVAL(date,'..'),INTERVAL(    '2021-01-01','2021-12-31'))", 0),
-    ("T_MEETS(INTERVAL(date,'..'),INTERVAL(       '2021-01-01','2021-12-31'))", 0),
-    ("T_METBY(INTERVAL(date,'..'),INTERVAL(       '2021-01-01','2021-12-31'))", 0),
+    ("T_AFTER(       INTERVAL(date,'..'),INTERVAL('2021-01-01','2021-12-31'))", 2),
+    ("T_BEFORE(      INTERVAL(date,'..'),INTERVAL('2021-01-01','2021-12-31'))", 3),
+    ("T_DISJOINT(    INTERVAL(date,'..'),INTERVAL('2021-01-01','2021-12-31'))", 3),
+    ("T_EQUALS(      INTERVAL(date,'..'),INTERVAL('2021-01-01','2021-12-31'))", 0),
+    ("T_INTERSECTS(  INTERVAL(date,'..'),INTERVAL('2021-01-01','2021-12-31'))", 0),
+    ("T_CONTAINS(    INTERVAL(date,'..'),INTERVAL('2021-01-01','2021-12-31'))", 0),
+    ("T_DURING(      INTERVAL(date,'..'),INTERVAL('2021-01-01','2021-12-31'))", 3),
+    ("T_FINISHEDBY(  INTERVAL(date,'..'),INTERVAL('2021-01-01','2021-12-31'))", 0),
+    ("T_FINISHES(    INTERVAL(date,'..'),INTERVAL('2021-01-01','2021-12-31'))", 0),
+    ("T_MEETS(       INTERVAL(date,'..'),INTERVAL('2021-01-01','2021-12-31'))", 0),
+    ("T_METBY(       INTERVAL(date,'..'),INTERVAL('2021-01-01','2021-12-31'))", 0),
     ("T_OVERLAPPEDBY(INTERVAL(date,'..'),INTERVAL('2021-01-01','2021-12-31'))", 0),
-    ("T_OVERLAPS(INTERVAL(date,'..'),INTERVAL(    '2021-01-01','2021-12-31'))", 0),
-    ("T_STARTEDBY(INTERVAL(date,'..'),INTERVAL(   '2021-01-01','2021-12-31'))", 0),
-    ("T_STARTS(INTERVAL(date,'..'),INTERVAL(      '2021-01-01','2021-12-31'))", 0),
+    ("T_OVERLAPS(    INTERVAL(date,'..'),INTERVAL('2021-01-01','2021-12-31'))", 0),
+    ("T_STARTEDBY(   INTERVAL(date,'..'),INTERVAL('2021-01-01','2021-12-31'))", 0),
+    ("T_STARTS(      INTERVAL(date,'..'),INTERVAL('2021-01-01','2021-12-31'))", 0),
 ];
 
 #[test]
-// #[tracing_test::traced_test]
-fn test_timestaps() -> Result<(), Box<dyn Error>> {
-    harness(PLACES, TIMESTAMP_PREDICATES.to_vec())
+fn test_timestamps() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceCSV::new();
+    harness(ds, &TIMESTAMP_PREDICATES)
+}
+
+#[tokio::test]
+async fn test_timestamps_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceGPkg::new().await?;
+    harness_gpkg(ds, &TIMESTAMP_PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_timestamps_sql() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceGPkg::new().await?;
+    harness_sql(ds, &TIMESTAMP_PREDICATES).await
 }
 
 #[test]
-// #[tracing_test::traced_test]
 fn test_dates() -> Result<(), Box<dyn Error>> {
-    harness(PLACES, DATE_PREDICATES.to_vec())
+    let ds = PlaceCSV::new();
+    harness(ds, &DATE_PREDICATES)
+}
+
+#[tokio::test]
+async fn test_dates_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceGPkg::new().await?;
+    harness_gpkg(ds, &DATE_PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_dates_sql() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceGPkg::new().await?;
+    harness_sql(ds, &DATE_PREDICATES).await
 }

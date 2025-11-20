@@ -1,3 +1,23 @@
+# Version 0.3.0 (2025-11-20)
+
+* Tripled most of the normative tests to exercise the new data sources and traits.
+* Expressions are now "reduced" before being evaluated, or converted into SQL.
+* Added 'Iterable' and 'Streamable' traits.
+* Added 'DataSource' trait w/ 'CSV' and 'GeoPackage' implementations.
+* Added the _GeoPackage_ test data DB/file included in the specs and used it in
+  `test_xxx_gpkg` and `test_xxx_sql` unit tests.
+* Renamed some types.
+* Upgrade `serde_with` to 3.16.0.
+* Upgrade `jiff` to 0.2.16.
+* Upgrade `regress` to 0.10.5.
+* Upgrade `unicode-normalization` to 0.1.25.
+* Upgrade `thiserror` to 2.0.17.
+* Upgrade `serde` to 1.0.228.
+* Upgrade `serde_json` to 1.0.145.
+* Fixed some documentation spelling.
+* Use latest secondary dependent crates.
+* Formatting.
+
 # Version 0.2.0 (2025-09-03)
 
 * Added ability to control precision when generating WKT.

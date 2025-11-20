@@ -16,7 +16,7 @@
 //! * store the valid predicates for each data source.
 //!
 
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
+use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use rand::Rng;
 use std::error::Error;
 use tracing_test::traced_test;
@@ -29,10 +29,10 @@ fn test() -> Result<(), Box<dyn Error>> {
     const E2: &str = r#"this IS Null"#;
 
     let shared_ctx = Context::new().freeze();
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     let expr1 = Expression::try_from_text(E1)?;
     evaluator1.setup(expr1)?;
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     let expr2 = Expression::try_from_text(E2)?;
     evaluator2.setup(expr2)?;
 
@@ -70,9 +70,6 @@ fn test() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
-
     tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
     tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
 
@@ -83,5 +80,6 @@ fn test() -> Result<(), Box<dyn Error>> {
     assert_eq!(actual_true2, expect_true2);
     assert_eq!(actual_false2, expect_false2);
     assert_eq!(actual_true2 + actual_false2, expect_true2 + expect_false2);
+
     Ok(())
 }

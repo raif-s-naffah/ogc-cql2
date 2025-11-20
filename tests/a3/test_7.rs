@@ -18,7 +18,7 @@
 //! * store the valid predicates for each data source.
 //!
 
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
+use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use std::error::Error;
 use tracing_test::traced_test;
 
@@ -32,9 +32,9 @@ fn test() -> Result<(), Box<dyn Error>> {
     let expr2 = Expression::try_from_text(E2)?;
 
     let shared_ctx = Context::new().freeze();
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     let feat = Resource::from([
@@ -55,9 +55,6 @@ fn test() -> Result<(), Box<dyn Error>> {
         Outcome::F => (),
         Outcome::N => panic!("Failed N"),
     }
-
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
 
     Ok(())
 }

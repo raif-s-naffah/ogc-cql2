@@ -12,7 +12,10 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{COUNTRIES, PLACES, RIVERS, harness};
+use crate::utils::{
+    CountryCSV, CountryGPkg, PlaceCSV, PlaceGPkg, RiverCSV, RiverGPkg, harness, harness_gpkg,
+    harness_sql,
+};
 use std::error::Error;
 use tracing_test::traced_test;
 
@@ -34,17 +37,56 @@ const RIVERS_PREDICATES: [(&str, u32); 1] = [(r#"S_INTERSECTS(geom,BBOX(-180,-90
 #[test]
 #[traced_test]
 fn test_countries() -> Result<(), Box<dyn Error>> {
-    harness(COUNTRIES, COUNTRIES_PREDICATES.to_vec())
+    let ds = CountryCSV::new();
+    harness(ds, &COUNTRIES_PREDICATES)
+}
+
+#[tokio::test]
+async fn test_countries_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = CountryGPkg::new().await?;
+    harness_gpkg(ds, &COUNTRIES_PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_countries_sql() -> Result<(), Box<dyn Error>> {
+    let ds = CountryGPkg::new().await?;
+    harness_sql(ds, &COUNTRIES_PREDICATES).await
 }
 
 #[test]
 #[traced_test]
 fn test_places() -> Result<(), Box<dyn Error>> {
-    harness(PLACES, PLACES_PREDICATES.to_vec())
+    let ds = PlaceCSV::new();
+    harness(ds, &PLACES_PREDICATES)
+}
+
+#[tokio::test]
+async fn test_places_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceGPkg::new().await?;
+    harness_gpkg(ds, &PLACES_PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_places_sql() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceGPkg::new().await?;
+    harness_sql(ds, &PLACES_PREDICATES).await
 }
 
 #[test]
 #[traced_test]
 fn test_rivers() -> Result<(), Box<dyn Error>> {
-    harness(RIVERS, RIVERS_PREDICATES.to_vec())
+    let ds = RiverCSV::new();
+    harness(ds, &RIVERS_PREDICATES)
+}
+
+#[tokio::test]
+async fn test_rivers_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = RiverGPkg::new().await?;
+    harness_gpkg(ds, &RIVERS_PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_rivers_sql() -> Result<(), Box<dyn Error>> {
+    let ds = RiverGPkg::new().await?;
+    harness_sql(ds, &RIVERS_PREDICATES).await
 }

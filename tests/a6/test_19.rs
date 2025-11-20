@@ -16,7 +16,7 @@
 //!
 
 use crate::utils::random_unicode_word;
-use ogc_cql2::{Context, Evaluator, EvaluatorImpl, Expression, Outcome, Q, Resource};
+use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use rand::{Rng, rng};
 use std::error::Error;
 
@@ -40,9 +40,9 @@ fn test() -> Result<(), Box<dyn Error>> {
     let expr2 = Expression::try_from_text(E2)?;
 
     let shared_ctx = Context::new().freeze();
-    let mut evaluator1 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     evaluator1.setup(expr1)?;
-    let mut evaluator2 = EvaluatorImpl::new(shared_ctx.clone());
+    let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     evaluator2.setup(expr2)?;
 
     let (mut expect_true1, mut expect_false1) = (0, 0);
@@ -79,9 +79,6 @@ fn test() -> Result<(), Box<dyn Error>> {
             Outcome::N => actual_null2 += 1,
         }
     }
-
-    evaluator1.teardown()?;
-    evaluator2.teardown()?;
 
     // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
     // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");

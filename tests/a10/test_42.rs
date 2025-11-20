@@ -12,7 +12,7 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{PLACES, harness};
+use crate::utils::{PlaceCSV, PlaceGPkg, harness, harness_gpkg, harness_sql};
 use std::error::Error;
 
 #[rustfmt::skip]
@@ -57,5 +57,18 @@ const PREDICATES: [(&str, u32); 36] = [
 
 #[test]
 fn test() -> Result<(), Box<dyn Error>> {
-    harness(PLACES, PREDICATES.to_vec())
+    let ds = PlaceCSV::new();
+    harness(ds, &PREDICATES)
+}
+
+#[tokio::test]
+async fn test_gpkg() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceGPkg::new().await?;
+    harness_gpkg(ds, &PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_sql() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceGPkg::new().await?;
+    harness_sql(ds, &PREDICATES).await
 }

@@ -30,7 +30,7 @@ pub(crate) fn test_text_samples() -> Result<(), Box<dyn Error>> {
 
 /// Parse all 109 .json files in "test/samples/json" and print outcome.
 #[test]
-// #[tracing_test::traced_test]
+#[tracing_test::traced_test]
 pub(crate) fn test_json_samples() -> Result<(), Box<dyn Error>> {
     let mut count = 0;
     for entry in WalkDir::new("tests/samples/json") {
@@ -59,7 +59,7 @@ pub(crate) fn test_json_samples() -> Result<(), Box<dyn Error>> {
 
 /// Ensure JSON-encoded parse result is usable by Text-encoded parser.
 #[test]
-// #[tracing_test::traced_test]
+#[tracing_test::traced_test]
 fn test_json_compat() -> Result<(), Box<dyn Error>> {
     let mut count = 0;
     for entry in WalkDir::new("tests/samples/json") {
