@@ -168,17 +168,17 @@ In no particular order...
 
 - [ ] Implement more _Data Sources_ such as _Shapefiles_ and _PostGIS tables_.
 - [ ] Add an option to the `repl` command line tool to output valid expressions as SQL WHERE clauses.
-- [ ] Investigate implementing basic spatial operators for 2D geometries in pure Rust; i.e. removing ependenceon the `geos` crate.
+- [ ] Investigate implementing basic spatial operators for 2D geometries in pure Rust; i.e. removing dependence on the `geos` crate.
 - [ ] Implement missing conformance tests preferably after finding an external set of Test Vectors.
 - [ ] Add more _Functions_.
 - [ ] Implement pooling of _Evaluators_ à la DB connections pools.
 - [ ] Refine the _Evaluator_ trait as the external interface to this library.
-- [ ] Investigate ways of translating _Expressions_ to PostGIS clauses + views.
 - [ ] Improve the way we handle user defined closures.
 - [ ] Reduce allocation.
 - [ ] Improve performance.
 - [ ] Reduce code repetition by using more macros.
 - [ ] Investigate alternative means for external clients to inject functions logic + metadata.
+- [x] ~~Investigate ways of translating _Expressions_ to PostGIS clauses + views.~~
 - [x] ~~The WKT parsing machinery entry-point is private. Make it public.~~ Done 2025-08-31.
 - [x] ~~Properly manage + handle global configurable options such as default CRS bearing in mind how it may affect conformance tests.~~ Done 2025-09-02.
 - [x] ~~Add an LRU to store commonly used CRSes.~~ Turns out Proj is not `Send` and hence cannot be cached in an LRU cache safely w/o introducing `unsafe` code.

@@ -17,18 +17,18 @@ use async_trait::async_trait;
 use futures::stream::BoxStream;
 use std::collections::HashMap;
 
-/// A dictionary of queryable property names (strings) to [Queryables][Q] values.
+/// A dictionary of queryable property names (strings) to [`Queryable`][Q] values.
 pub type Resource = HashMap<String, Q>;
 
-/// Marker trait for a type that can act as a data source provider of features
-/// and resources in the context of processing CQL2 filter expressions.
+/// _Marker_ trait for a type that can act as a data source provider of _Features_
+/// and [`Resource`]s in the context of processing CQL2 filter expressions.
 ///
 /// A CSV file, and a GeoPackage autonomous database file are examples of this.
 #[allow(dead_code)]
 pub trait DataSource {}
 
-/// Capability of a [DataSource] to provide an iterator over a collection of
-/// _Features_ and _Resources_.
+/// Capability of a [`DataSource`] to provide an iterator over a collection of
+/// _Features_ or [Resources][Resource].
 pub trait IterableDS {
     /// Type representing a Feature which must be convertible to a [Resource].
     type Item: TryInto<Resource, Error = Self::Err>;
@@ -39,10 +39,11 @@ pub trait IterableDS {
     fn iter(&self) -> Result<impl Iterator<Item = Result<Self::Item, Self::Err>>, Self::Err>;
 }
 
-/// Capability of a [DataSource] to asynchronously stream _Features_ and [Resource]s.
+/// Capability of a [`DataSource`] to asynchronously stream _Features_ or
+/// [Resources][Resource].
 #[async_trait]
 pub trait StreamableDS {
-    /// Type representing a Feature which must be convertible to a [Resource].
+    /// Type representing a _Feature_ which must be convertible to a [`Resource`].
     type Item: TryInto<Resource, Error = Self::Err>;
     /// Error raised by this.
     type Err;

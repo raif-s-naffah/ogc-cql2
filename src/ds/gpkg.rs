@@ -51,10 +51,8 @@ pub(crate) struct TContents {
     srs_id: Option<i32>,
 }
 
-/// GeoPackage [DataSource] binding a .gpkg database file + a layer name that
-/// maps rows to _Features_ and [Resource][1]s.
-///
-/// [1]: crate::Resource
+/// _GeoPackage_ [`DataSource`] binding a `.gpkg` database file + a layer name that
+/// maps rows to _Features_ and [Resources][crate::Resource].
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct GPkgDataSource {
@@ -243,7 +241,7 @@ fn cmp_bounds(a: &str, b: &str) -> Ordering {
     }
 }
 
-pub(crate) fn to_sql(exp: E) -> Result<String, MyError> {
+fn to_sql(exp: E) -> Result<String, MyError> {
     match exp {
         E::Null => Ok("NULL".to_owned()),
         E::Unbounded => Ok("'..'".to_owned()),
@@ -374,7 +372,7 @@ pub(crate) fn to_sql(exp: E) -> Result<String, MyError> {
             let params_ = params?;
             Ok(format!("{}({})", x.name, params_.join(", ")))
         }
-        // NOTE (rsn) 20251105 - SQLite does not accept array elemenets w/in
+        // NOTE (rsn) 20251105 - SQLite does not accept array elements w/in
         // square brackets; only parenthesis...
         E::Array(x) => {
             let items: Result<Vec<String>, MyError> = x.into_iter().map(to_sql).collect();
@@ -447,17 +445,17 @@ fn t_after_sql(a: E, b: E) -> Result<String, MyError> {
         (false, false) => Ok(format!("{} > {}", to_sql(e0)?, to_sql(e2)?)),
         // w/ the remaining cases, we may need additional xxx IS NOT NULL fragments...
         (false, true) => {
-            let base = format!("{} > {} COLLATE CQL2_BOUNDS", to_sql(e0)?, to_sql(e3)?);
+            let base = format!("{} > {} COLLATE {CQL2_BOUNDS}", to_sql(e0)?, to_sql(e3)?);
             let sql = crate::check_ids!(e2, base);
             Ok(sql)
         }
         (true, false) => {
-            let base = format!("{} > {} COLLATE CQL2_BOUNDS", to_sql(e0)?, to_sql(e2)?);
+            let base = format!("{} > {} COLLATE {CQL2_BOUNDS}", to_sql(e0)?, to_sql(e2)?);
             let sql = crate::check_ids!(e1, base);
             Ok(sql)
         }
         (true, true) => {
-            let base = format!("{} > {} COLLATE CQL2_BOUNDS", to_sql(e0)?, to_sql(e3)?);
+            let base = format!("{} > {} COLLATE {CQL2_BOUNDS}", to_sql(e0)?, to_sql(e3)?);
             let sql = crate::check_ids!(e1, e2, base);
             Ok(sql)
         }
@@ -469,17 +467,17 @@ fn t_before_sql(a: E, b: E) -> Result<String, MyError> {
     match (a_is_interval, b_is_interval) {
         (false, false) => Ok(format!("{} < {}", to_sql(e0)?, to_sql(e2)?)),
         (false, true) => {
-            let base = format!("{} < {} COLLATE CQL2_BOUNDS", to_sql(e0)?, to_sql(e2)?);
+            let base = format!("{} < {} COLLATE {CQL2_BOUNDS}", to_sql(e0)?, to_sql(e2)?);
             let sql = crate::check_ids!(e3, base);
             Ok(sql)
         }
         (true, false) => {
-            let base = format!("{} < {} COLLATE CQL2_BOUNDS", to_sql(e1)?, to_sql(e2)?);
+            let base = format!("{} < {} COLLATE {CQL2_BOUNDS}", to_sql(e1)?, to_sql(e2)?);
             let sql = crate::check_ids!(e0, base);
             Ok(sql)
         }
         (true, true) => {
-            let base = format!("{} < {} COLLATE CQL2_BOUNDS", to_sql(e1)?, to_sql(e2)?);
+            let base = format!("{} < {} COLLATE {CQL2_BOUNDS}", to_sql(e1)?, to_sql(e2)?);
             let sql = crate::check_ids!(e0, e3, base);
             Ok(sql)
         }
@@ -690,14 +688,14 @@ fn t_starts_sql(a: E, b: E) -> Result<String, MyError> {
 /// Macro to generate a concrete [GPkgDataSource].
 ///
 /// Caller must provide the following parameters:
-/// * $vis: Visibility specifier of the generated artifacts.
-/// * $name: Prefix of the concrete data source structure name to materialize.
+/// * `$vis`: Visibility specifier of the generated artifacts; e.g. `pub(crate)`.
+/// * `$name`: Prefix of the concrete data source structure name to materialize.
 ///   The final name will have a 'GPkg' suffix appended; eg. `Foo` -> `FooGPkg`.
-/// * $gpkg_url: Database URL to an accessible GeoPackage DB; e.g.
+/// * `$gpkg_url`: Database URL to an accessible _GeoPackage_ DB; e.g.
 ///   `sqlite:path/to/a/geo_package.gpkg`
-/// * $layer: Name of the table/layer containing the features' data.
-/// * $feature: `sqlx` _FromRow_ convertible structure to map database layer
-///   table rows to Features.
+/// * `$layer`: Name of the table/layer containing the features' data.
+/// * `$feature`: `sqlx` _FromRow_ convertible structure to map database layer
+///   table rows to _Features_.
 #[macro_export]
 macro_rules! gen_gpkg_ds {
     ($vis:vis, $name:expr, $gpkg_url:expr, $layer:expr, $feature:expr) => {
@@ -766,7 +764,6 @@ macro_rules! gen_gpkg_ds {
                     exp: &Expression,
                 ) -> Result<::futures::stream::BoxStream<'_, Result<$feature, MyError>>, MyError> {
                     let where_clause = self.0.to_sql(exp)?;
-                    // let sql = format!("SELECT * FROM {} WHERE {where_clause}", $layer);
                     let sql = format!(r#"SELECT * FROM "{}" WHERE {}"#, self.vtable(), where_clause);
                     let safe_sql = AssertSqlSafe(sql);
                     let it = sqlx::query_as::<_, $feature>(safe_sql)
@@ -799,6 +796,7 @@ macro_rules! gen_gpkg_ds {
 /// not and compute a tuple that represents the result along w/ four expressions
 /// representing the entities to use in formulating comparison predicates that
 /// will reflect a desired CQL2 date/time function.
+#[doc(hidden)]
 #[macro_export]
 macro_rules! unfold_expressions {
     ( $a: expr, $b: expr ) => {{
@@ -825,6 +823,7 @@ macro_rules! unfold_expressions {
 
 /// Augment a given `$sql` fragment by appending a `<x> NOT NULL` fragment(s)
 /// if either or both `$a` and `$b` are _Identifiers_.
+#[doc(hidden)]
 #[macro_export]
 macro_rules! check_ids {
     ( $a: expr, $sql: expr ) => {{
@@ -861,6 +860,7 @@ macro_rules! check_ids {
 
 /// Similar to `unfold_expressions!` except that it always expects the arguments
 /// to be _Intervals_.
+#[doc(hidden)]
 #[macro_export]
 macro_rules! unfold_intervals {
     ( $a: expr, $b: expr ) => {{

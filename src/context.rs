@@ -9,7 +9,7 @@ use crate::{ExtDataType, FnInfo, MyError, add_builtins, crs::CRS};
 use core::fmt;
 use std::{any::Any, collections::HashMap, rc::Rc};
 
-/// A Context object we will be handing to evaluators so they are aware of
+/// A _Context_ object we will be handing to [evaluators][crate::Evaluator] so they are aware of
 /// external registered _Functions_.
 pub struct Context {
     crs: CRS,

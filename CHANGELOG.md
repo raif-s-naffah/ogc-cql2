@@ -1,3 +1,7 @@
+# UNPUBLISHED (2025-11-22)
+
+* Hid internal macros, edited documentation + fixed spelling mistakes.
+
 # Version 0.3.0 (2025-11-20)
 
 * Tripled most of the normative tests to exercise the new data sources and traits.

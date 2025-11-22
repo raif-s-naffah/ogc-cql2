@@ -67,7 +67,7 @@ pub enum G {
     BBox(BBox),
 }
 
-/// Geometry Trait implemented by all geometry types in this library.
+/// Geometry Trait implemented by all [geometry][G] types in this library.
 pub trait GTrait {
     /// Return TRUE if coordinates are 2D. Return FALSE otherwise.
     fn is_2d(&self) -> bool;

@@ -238,18 +238,25 @@
 //! 
 //! The last approach is by far the most effective since it delegates to a
 //! DB engine the job of filtering the records, while the 2<sup>nd</sup> one
-//! is the worst b/c it involves converting every _Feature_ to a [Resource]
+//! is the worst b/c it involves converting every _Feature_ to a [`Resource`]
 //! even when we may not need all the queryables from that newly created
-//! [Resource].
+//! [`Resource`].
 //! 
 //! As an example of relative performance of those approaches, consider the
 //! timing of `test_points`, `test_points_gpkg` and `test_points_sql` in
 //! `a9::test_37` which correspond to those 3 strategies respectively when
-//! processing a data set of 243 records. On my development laptop, i get...
+//! processing a data set of 243 records. On my development laptop, w/ the
+//! `profile [unoptimized + debuginfo]` i get...
 //! 
-//! 1. `test_points()` -> `0.10s`
-//! 2. `test_points_gpkg()` -> `5.91s`
-//! 3. `test_points_sql()` -> `0.08s`
+//! ```text
+//! +---+--------------------+-------+
+//! | # | test               | time  |
+//! +---+--------------------+-------+
+//! | 1 | test_points()      | 0.10s |
+//! | 2 | test_points_gpkg() | 5.91s |
+//! | 3 | test_points_sql()  | 0.08s |
+//! +---+--------------------+-------+
+//! ```
 //! 
 //! 
 //! # Third-party crates
@@ -391,22 +398,22 @@ impl fmt::Display for Expression {
     }
 }
 
-/// Text-encoded CQL2 Expression.
+/// Text-encoded CQL2 [`Expression`].
 #[derive(Debug, PartialEq)]
 pub struct TextEncoded(expr::E);
 
-/// JSON-encoded CQL2 Expression.
+/// JSON-encoded CQL2 [`Expression`].
 #[derive(Debug)]
 pub struct JsonEncoded(json::Expression);
 
-/// Possible outcome values when evaluating an [Expression] against an
-/// individual _Resource_ from a collection.
+/// Possible outcome values when evaluating an [`Expression`] against an
+/// individual [`Resource`] from a collection.
 ///
 /// From [OGC CQL2][1]:
 /// > _Each resource instance in the source collection is evaluated against
 /// > a filtering expression. The net effect of evaluating a filter
-/// > [Expression] is a subset of resources that satisfy the predicate(s)
-/// > in the [Expression]._
+/// > [`Expression`] is a subset of resources that satisfy the predicate(s)
+/// > in the [`Expression`]._
 ///
 /// Logically connected predicates are evaluated according to the following
 /// truth table, where `T` is TRUE, `F` is FALSE and `N` is NULL.

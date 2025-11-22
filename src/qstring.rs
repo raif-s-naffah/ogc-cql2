@@ -49,11 +49,9 @@ impl ops::BitOr for Ignoring {
     }
 }
 
-/// String based type used by [Queryables][1] to represent a plain string, and
+/// String based type used by [`Queryable`s][crate::Q] to represent a plain string, and
 /// a set of flags to indicate how to use it in case and/or accent insensitive
 /// contexts.
-///
-/// [1]: crate::queryable::Q
 #[derive(Debug, Clone, PartialOrd, Ord)]
 pub struct QString {
     /// String literal.

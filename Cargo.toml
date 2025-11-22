@@ -17,7 +17,7 @@ tracing = "0.1.41"
 dotenvy = "0.15.7"
 thiserror = "2.0.17"
 peg = "0.8.5"
-geos = { version="10.0.0", features = ["v3_11_0"] }
+geos = { version = "10.0.0", features = ["v3_11_0"] }
 proj = "0.31.0"
 jiff = { version = "0.2.16", features = ["serde"] }
 unicode-normalization = "0.1.25"

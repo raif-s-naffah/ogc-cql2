@@ -31,11 +31,11 @@ pub enum ExtDataType {
     Geom,
 }
 
-/// Type alias for a generic Function that may be invoked in the process of
-/// evaluating a CQL2 expression.
+/// Type alias for a generic _Function_ that may be invoked in the process of
+/// evaluating a CQL2 [expressions][crate::Expression].
 type GenericFn = Box<dyn Fn(Vec<Box<dyn Any>>) -> Option<Box<dyn Any>> + Send + Sync + 'static>;
 
-/// A struct that holds metadata about a Function.
+/// A struct that holds metadata about a _Function_.
 pub struct FnInfo {
     pub(crate) closure: GenericFn,
     pub(crate) arg_types: Vec<ExtDataType>,

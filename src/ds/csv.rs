@@ -8,9 +8,7 @@
 use crate::ds::DataSource;
 use std::path::PathBuf;
 
-/// [DataSource] of Features and [Resource][1]s mapped from CSV rows/records.
-///
-/// [1]: type.Resource.html
+/// [`DataSource`] of _Features_ and [Resources][crate::Resource] mapped from CSV rows/records.
 #[derive(Debug)]
 pub struct CSVDataSource {
     path: PathBuf,
@@ -33,11 +31,11 @@ impl CSVDataSource {
 /// Macro to generate a concrete [CSVDataSource].
 ///
 /// Caller must provide the following parameters:
-/// * $vis: Visibility specifier of the generated artifacts.
-/// * $name: Prefix of the concrete data source structure name to materialize.
+/// * `$vis`: Visibility specifier of the generated artifacts; e.g. `pub`.
+/// * `$name`: Prefix of the concrete data source structure name to materialize.
 ///   The final name will have a 'CSV' suffix appended; eg. `Foo` -> `FooCSV`.
-/// * $path: Path to a readable CSV file.
-/// * $feature: `serde` deserializable structure that maps rows to Features.
+/// * `$path`: Path to a readable CSV file.
+/// * `$feature`: `serde` deserializable structure that maps rows to _Features_.
 #[macro_export]
 macro_rules! gen_csv_ds {
     ($vis:vis, $name:expr, $path:expr, $feature:expr) => {

@@ -45,7 +45,8 @@ pub enum DataType {
     List,
 }
 
-/// A Resource queryable property possible concrete value variants.
+/// A [`Resource`][crate::Resource] queryable property possible concrete value
+/// variants.
 #[derive(Clone)]
 pub enum Q {
     /// Unknown or undefined w/in the current context.

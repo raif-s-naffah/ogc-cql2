@@ -10,7 +10,7 @@ use crate::{
 };
 use tracing::{debug, error};
 
-/// Capability of processing OGC CQL2 expressions, both text- and json-encoded.
+/// Capability of processing OGC CQL2 [expressions][Expression], both text- and json-encoded.
 pub trait Evaluator {
     /// Setup an instance to operate with a given [Expression].
     fn setup(&mut self, expr: Expression) -> Result<(), MyError>;
@@ -20,8 +20,8 @@ pub trait Evaluator {
     fn evaluate(&self, f: &Resource) -> Result<Outcome, MyError>;
 }
 
-/// A concrete evaluator that does the work w/o relying on any external source
-/// or capability that may be available in high-level data sources such as a
+/// A concrete [evaluator][Evaluator] that does the work w/o relying on any external
+/// source or capability that may be available in high-level data sources such as a
 /// database engine endowed w/ spatial and other operators.
 #[derive(Debug)]
 pub struct ExEvaluator {
