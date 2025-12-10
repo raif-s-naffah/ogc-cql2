@@ -14,6 +14,7 @@ use crate::{
     bound::Bound,
     geom::{G, GTrait},
     qstring::QString,
+    wkb::PostGisBinary,
 };
 use core::fmt;
 use jiff::{Timestamp, Zoned, civil::Date, tz::TimeZone};
@@ -167,6 +168,11 @@ impl Q {
         Ok(Q::Instant(Bound::Timestamp(z)))
     }
 
+    /// Try creating a new temporal timestamp variant instance from a [Zoned].
+    pub fn try_from_timestamp(value: &Zoned) -> Result<Self, MyError> {
+        Ok(Q::Instant(Bound::Timestamp(value.to_owned())))
+    }
+
     /// Try creating a new temporal date variant instance from a _fullDate_
     /// string.
     ///
@@ -187,15 +193,30 @@ impl Q {
         Ok(Q::Instant(Bound::Date(z)))
     }
 
+    /// Try creating a new temporal date variant instance from a civil [Date].
+    pub fn try_from_date(value: &Date) -> Result<Self, MyError> {
+        let z = value.to_zoned(TimeZone::UTC)?;
+        Ok(Q::Instant(Bound::Date(z)))
+    }
+
     /// Try creating a new instance from a Well Known Text encoded geometry.
     pub fn try_from_wkt(value: &str) -> Result<Self, MyError> {
         let g = G::try_from(value)?;
         Ok(Q::Geom(g))
     }
 
-    /// Try creating a new instance from a Well Known Binary encoded geometry.
+    /// Try creating a new instance from a _GeoPackage Well Known Binary_
+    /// encoded geometry.
     pub fn try_from_wkb(value: &[u8]) -> Result<Self, MyError> {
         let g = G::try_from(value)?;
+        Ok(Q::Geom(g))
+    }
+
+    /// Try creating a new instance from a _PostGIS Extended Well Known Binary_
+    /// encoded geometry.
+    pub fn try_from_ewkb(value: &[u8]) -> Result<Self, MyError> {
+        let ewkb = PostGisBinary::try_from(value)?;
+        let g = ewkb.geom();
         Ok(Q::Geom(g))
     }
 
@@ -665,7 +686,6 @@ mod tests {
     }
 
     #[test]
-    #[tracing_test::traced_test]
     fn test_like() {
         // plain input and pattern.  no wildcards...
         let input = QString::plain("hello");

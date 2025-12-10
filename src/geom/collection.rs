@@ -5,7 +5,7 @@
 //! Collection of heterogeous geometries.
 //!
 
-use crate::{CRS, G, GTrait, MyError, srid::SRID};
+use crate::{CRS, G, GTrait, MyError, config::config, srid::SRID};
 use core::fmt;
 use geos::{ConstGeometry, Geom, Geometry};
 use std::slice::Iter;
@@ -98,7 +98,7 @@ impl Geometries {
     }
 
     pub(crate) fn from_items(items: Vec<G>) -> Self {
-        Self::from_items_and_srid(items, SRID::default())
+        Self::from_items_and_srid(items, *config().default_srid())
     }
 
     pub(crate) fn from_items_and_srid(items: Vec<G>, srid: SRID) -> Self {

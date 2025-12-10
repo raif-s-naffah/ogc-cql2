@@ -19,11 +19,10 @@
 //!
 
 use crate::utils::{
-    CountryCSV, CountryGPkg, PlaceCSV, PlaceGPkg, RiverCSV, RiverGPkg, harness, harness_gpkg,
-    harness_sql,
+    CountryCSV, CountryGPkg, CountryPG, PlaceCSV, PlaceGPkg, PlacePG, RiverCSV, RiverGPkg, RiverPG,
+    harness, harness_gpkg, harness_sql,
 };
 use std::error::Error;
-use tracing_test::traced_test;
 
 #[rustfmt::skip]
 const POINT_PREDICATE: [(&str, u32); 1] = [
@@ -58,8 +57,13 @@ async fn test_points_sql() -> Result<(), Box<dyn Error>> {
     harness_sql(ds, &POINT_PREDICATE).await
 }
 
+#[tokio::test]
+async fn test_points_pg_sql() -> Result<(), Box<dyn Error>> {
+    let ds = PlacePG::new().await?;
+    harness_sql(ds, &POINT_PREDICATE).await
+}
+
 #[test]
-#[traced_test]
 fn test_lines() -> Result<(), Box<dyn Error>> {
     let ds = RiverCSV::new();
     harness(ds, &LINE_PREDICATE)
@@ -77,8 +81,13 @@ async fn test_lines_sql() -> Result<(), Box<dyn Error>> {
     harness_sql(ds, &LINE_PREDICATE).await
 }
 
+#[tokio::test]
+async fn test_lines_pg_sql() -> Result<(), Box<dyn Error>> {
+    let ds = RiverPG::new().await?;
+    harness_sql(ds, &LINE_PREDICATE).await
+}
+
 #[test]
-#[traced_test]
 fn test_polygons() -> Result<(), Box<dyn Error>> {
     let ds = CountryCSV::new();
     harness(ds, &POLYGON_PREDICATE)
@@ -93,5 +102,11 @@ async fn test_polygons_gpkg() -> Result<(), Box<dyn Error>> {
 #[tokio::test]
 async fn test_polygons_sql() -> Result<(), Box<dyn Error>> {
     let ds = CountryGPkg::new().await?;
+    harness_sql(ds, &POLYGON_PREDICATE).await
+}
+
+#[tokio::test]
+async fn test_polygons_pg_sql() -> Result<(), Box<dyn Error>> {
+    let ds = CountryPG::new().await?;
     harness_sql(ds, &POLYGON_PREDICATE).await
 }

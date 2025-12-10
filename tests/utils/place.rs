@@ -5,14 +5,14 @@
 //! can be used by the library.
 //!
 
-use crate::utils::GPKG_URL;
+use crate::utils::{GPKG_URL, PG_DB_NAME};
 use core::fmt;
 use csv::StringRecord;
 use futures::{StreamExt, TryStreamExt};
-use ogc_cql2::prelude::*;
+use ogc_cql2::{gen_pg_ds, prelude::*};
 use serde::Deserialize;
 use sqlx::{AssertSqlSafe, FromRow};
-use std::{collections::HashMap, error::Error, fs::File};
+use std::{collections::HashMap, error::Error};
 
 const PLACES_CSV: &str = "./tests/samples/data/ne_110m_populated_places_simple.csv";
 const PLACES_TBL: &str = "ne_110m_populated_places_simple";
@@ -225,11 +225,114 @@ gen_gpkg_ds!(
     TPlace
 );
 
+// ============================================================================
+
+#[derive(Debug, Default, FromRow)]
+pub(crate) struct LPlace {
+    fid: i32,
+    name: String,
+    nameascii: String,
+    pop_max: i64,
+    pop_min: i64,
+    pop_other: i64,
+    date: Option<PgDate>,
+    start: Option<PgTimestamp>,
+    end: Option<PgTimestamp>,
+    boolean: Option<bool>,
+    geom: G,
+}
+
+impl TryFrom<LPlace> for Resource {
+    type Error = MyError;
+
+    fn try_from(value: LPlace) -> Result<Self, Self::Error> {
+        // w/o relying on a 3rd-party library, there's no direct way of
+        // converting an i64 to f64.  we'll first convert to u32...
+        let pop_max_u32 = u32::try_from(value.pop_max).expect("Failed i64 -> u32");
+        let pop_max = f64::try_from(pop_max_u32).expect("Failed u32 -> f64");
+        let pop_min_u32 = u32::try_from(value.pop_min).expect("Failed i64 -> u32");
+        let pop_min = f64::try_from(pop_min_u32).expect("Failed u32 -> f64");
+        let pop_other_u32 = u32::try_from(value.pop_other).expect("Failed i64 -> u32)");
+        let pop_other = f64::try_from(pop_other_u32).expect("Failed u32 -> f64");
+        let mut map = HashMap::from([
+            ("fid".into(), Q::try_from(value.fid)?),
+            ("name".into(), Q::new_plain_str(&value.name)),
+            ("nameascii".into(), Q::new_plain_str(&value.nameascii)),
+            ("pop_max".into(), Q::Num(pop_max)),
+            ("pop_min".into(), Q::Num(pop_min)),
+            ("pop_other".into(), Q::Num(pop_other)),
+            ("geom".into(), Q::Geom(value.geom)),
+        ]);
+        // now optional fields...
+        if let Some(x) = value.date {
+            map.insert("date".into(), Q::try_from_date(&x.0)?);
+        }
+        if let Some(x) = value.start {
+            map.insert("start".into(), Q::try_from_timestamp(&x.0)?);
+        }
+        if let Some(x) = value.end {
+            map.insert("end".into(), Q::try_from_timestamp(&x.0)?);
+        }
+        if let Some(x) = value.boolean {
+            map.insert("boolean".into(), Q::Bool(x));
+        }
+
+        Ok(map)
+    }
+}
+
+gen_pg_ds!(pub(crate), "Place", PG_DB_NAME, PLACES_TBL, LPlace);
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use jiff::{civil::date, tz::TimeZone};
     use ogc_cql2::{G, GTrait};
-    use sqlx::any::install_default_drivers;
+    use sqlx::{PgPool, any::install_default_drivers, postgres::PgConnectOptions};
+
+    #[rustfmt::skip]
+    const PREDICATES: [(&str, u32); 36] = [
+        (r#"name IS NOT NULL"#,  243),  // 0
+        (r#"name IS NULL"#,        0),
+        (r#"name='København'"#,    1),
+        (r#"name>='København'"#, 137),
+        (r#"name>'København'"#,  136),
+        (r#"name<='København'"#, 107),  // 5
+        (r#"name<'København'"#,  106),
+        (r#"name<>'København'"#, 242),
+        // -----
+        (r#"pop_other IS NOT NULL"#, 243),  // 8
+        (r#"pop_other IS NULL"#,       0),
+        (r#"pop_other=1038288"#,       1),  // 10
+        (r#"pop_other>=1038288"#,    123),
+        (r#"pop_other>1038288"#,     122),
+        (r#"pop_other<=1038288"#,    121),
+        (r#"pop_other<1038288"#,     120),
+        (r#"pop_other<>1038288"#,    242),  // 15
+        // -----
+        (r#""date" IS NOT NULL"#,         3),
+        (r#""date" IS NULL"#,           240),
+        (r#""date"=DATE('2022-04-16')"#,  1),
+        (r#""date">=DATE('2022-04-16')"#, 2),
+        (r#""date">DATE('2022-04-16')"#,  1),  // 20
+        (r#""date"<=DATE('2022-04-16')"#, 2),
+        (r#""date"<DATE('2022-04-16')"#,  1),
+        (r#""date"<>DATE('2022-04-16')"#, 2),
+        // -----
+        (r#"start IS NOT NULL"#,                        3),  // 24
+        (r#"start IS NULL"#,                          240),  // 25
+        (r#"start=TIMESTAMP('2022-04-16T10:13:19Z')"#,  1),
+        (r#"start>=TIMESTAMP('2022-04-16T10:13:19Z')"#, 2),
+        (r#"start>TIMESTAMP('2022-04-16T10:13:19Z')"#,  1),
+        (r#"start<=TIMESTAMP('2022-04-16T10:13:19Z')"#, 2),
+        (r#"start<TIMESTAMP('2022-04-16T10:13:19Z')"#,  1),  // 30
+        (r#"start<>TIMESTAMP('2022-04-16T10:13:19Z')"#, 2),
+        // -----
+        (r#"boolean IS NOT NULL"#, 3),  // 32
+        (r#"boolean IS NULL"#,   240),
+        (r#"boolean=true"#,        2),
+        (r#"boolean=false"#,       1),  // 35
+    ];
 
     #[test]
     fn test_iter() -> Result<(), Box<dyn Error>> {
@@ -326,50 +429,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_sql() -> Result<(), Box<dyn Error>> {
-        #[rustfmt::skip]
-        const PREDICATES: [(&str, u32); 36] = [
-            (r#"name IS NOT NULL"#,  243),
-            (r#"name IS NULL"#,        0),
-            (r#"name='København'"#,    1),
-            (r#"name>='København'"#, 137),
-            (r#"name>'København'"#,  136),
-            (r#"name<='København'"#, 107),
-            (r#"name<'København'"#,  106),
-            (r#"name<>'København'"#, 242),
-            // -----
-            (r#"pop_other IS NOT NULL"#, 243),
-            (r#"pop_other IS NULL"#,       0),
-            (r#"pop_other=1038288"#,       1),
-            (r#"pop_other>=1038288"#,    123),
-            (r#"pop_other>1038288"#,     122),
-            (r#"pop_other<=1038288"#,    121),
-            (r#"pop_other<1038288"#,     120),
-            (r#"pop_other<>1038288"#,    242),
-            // -----
-            (r#""date" IS NOT NULL"#,         3),
-            (r#""date" IS NULL"#,           240),
-            (r#""date"=DATE('2022-04-16')"#,  1),
-            (r#""date">=DATE('2022-04-16')"#, 2),
-            (r#""date">DATE('2022-04-16')"#,  1),
-            (r#""date"<=DATE('2022-04-16')"#, 2),
-            (r#""date"<DATE('2022-04-16')"#,  1),
-            (r#""date"<>DATE('2022-04-16')"#, 2),
-            // -----
-            (r#"start IS NOT NULL"#,                        3),
-            (r#"start IS NULL"#,                          240),
-            (r#"start=TIMESTAMP('2022-04-16T10:13:19Z')"#,  1),
-            (r#"start>=TIMESTAMP('2022-04-16T10:13:19Z')"#, 2),
-            (r#"start>TIMESTAMP('2022-04-16T10:13:19Z')"#,  1),
-            (r#"start<=TIMESTAMP('2022-04-16T10:13:19Z')"#, 2),
-            (r#"start<TIMESTAMP('2022-04-16T10:13:19Z')"#,  1),
-            (r#"start<>TIMESTAMP('2022-04-16T10:13:19Z')"#, 2),
-            // -----
-            (r#"boolean IS NOT NULL"#, 3),
-            (r#"boolean IS NULL"#,   240),
-            (r#"boolean=true"#,        2),
-            (r#"boolean=false"#,       1),
-        ];
-
         let gpkg = PlaceGPkg::new().await?;
         // use the 'stream_where()' entry point -> TPlace...
         for (ndx, (filter, expected)) in PREDICATES.iter().enumerate() {
@@ -381,6 +440,142 @@ mod tests {
             }
             assert_eq!(actual, *expected, "Failed predicate #{ndx}");
         }
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_pg() -> Result<(), Box<dyn Error>> {
+        // there are 3 non-trivial dates in the set: 2021-04-16, and for the
+        // month and day but for the following 2 years.
+        let dates = vec![
+            date(2021, 4, 16).to_zoned(TimeZone::UTC)?,
+            date(2022, 4, 16).to_zoned(TimeZone::UTC)?,
+            date(2023, 4, 16).to_zoned(TimeZone::UTC)?,
+        ];
+        // valid 'start' timestamps...
+        let starts = vec![
+            date(2021, 4, 16)
+                .at(10, 15, 59, 0)
+                .to_zoned(TimeZone::UTC)?,
+            date(2022, 4, 16)
+                .at(10, 13, 19, 0)
+                .to_zoned(TimeZone::UTC)?,
+            date(2022, 4, 16)
+                .at(10, 15, 10, 0)
+                .to_zoned(TimeZone::UTC)?,
+        ];
+        // valid 'end' timestamps...
+        let ends = vec![
+            date(2022, 04, 16)
+                .at(10, 16, 06, 0)
+                .to_zoned(TimeZone::UTC)?,
+            date(2024, 02, 22)
+                .at(09, 37, 52, 0)
+                .to_zoned(TimeZone::UTC)?,
+            date(2022, 12, 16)
+                .at(10, 14, 53, 0)
+                .to_zoned(TimeZone::UTC)?,
+        ];
+
+        let (mut count, mut count_temporals) = (0, 0);
+        let ds = PlacePG::new().await?;
+        let mut stream = ds.stream().await?;
+        while let Some(feat) = stream.try_next().await? {
+            count += 1;
+            let queryable = feat.get("geom").expect("Missing 'geom'");
+            let g = queryable.to_geom()?;
+            // all geometries are valid points...
+            assert_eq!(g.type_(), "Point");
+
+            // all 3 temporal fields are present or not together...
+            if let Some(date) = feat.get("date") {
+                assert!(dates.contains(&date.to_bound()?.as_zoned().unwrap()));
+                let start = feat.get("start");
+                assert!(start.is_some());
+                let start = start.unwrap();
+                assert!(starts.contains(&start.to_bound()?.as_zoned().unwrap()));
+                let end = feat.get("end");
+                assert!(end.is_some());
+                let end = end.unwrap();
+                assert!(ends.contains(&end.to_bound()?.as_zoned().unwrap()));
+                count_temporals += 1;
+            } else {
+                assert!(feat.get("start").is_none());
+                assert!(feat.get("end").is_none());
+            }
+        }
+
+        // layer contains 243 features...
+        assert_eq!(count, 243);
+        // ... but only 3 contain non-trivial temporal values...
+        assert_eq!(count_temporals, 3);
+        Ok(())
+    }
+
+    #[tokio::test]
+    #[tracing_test::traced_test]
+    async fn test_pg_sql() -> Result<(), Box<dyn Error>> {
+        let ds = PlacePG::new().await?;
+        // use the 'stream_where()' entry point -> LPlace...
+        for (ndx, (filter, expected)) in PREDICATES.iter().enumerate() {
+            let exp = Expression::try_from_text(&filter)?;
+            let mut actual = 0;
+            let mut stream = ds.fetch_where(&exp).await?;
+            while let Some(_) = stream.try_next().await? {
+                actual += 1;
+            }
+            assert_eq!(actual, *expected, "Failed predicate #{ndx}");
+        }
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_pg_sql_timestamp() -> Result<(), Box<dyn Error>> {
+        #[rustfmt::skip]
+        const PREDICATES: [(&str, u32); 6] = [
+            // (r#"name='København'"#, 1),
+            (r#"start=TIMESTAMP('2022-04-16T10:13:19Z')"#,  1),
+            (r#"start>=TIMESTAMP('2022-04-16T10:13:19Z')"#, 2),
+            (r#"start>TIMESTAMP('2022-04-16T10:13:19Z')"#,  1),
+            (r#"start<=TIMESTAMP('2022-04-16T10:13:19Z')"#, 2),
+            (r#"start<TIMESTAMP('2022-04-16T10:13:19Z')"#,  1),
+            (r#"start<>TIMESTAMP('2022-04-16T10:13:19Z')"#, 2),
+        ];
+
+        let ds = PlacePG::new().await?;
+        for (ndx, (filter, expected)) in PREDICATES.iter().enumerate() {
+            let exp = Expression::try_from_text(&filter)?;
+            let mut actual = 0;
+            let mut stream = ds.fetch_where(&exp).await?;
+            while let Some(_) = stream.try_next().await? {
+                actual += 1;
+            }
+            assert_eq!(actual, *expected, "Failed predicate #{ndx}");
+        }
+        Ok(())
+    }
+
+    // test to ensure timestamp columns correctly reflect the same value as
+    // the one encoded in the GeoPackage table...
+    #[tokio::test]
+    async fn test_pg_timestamp_column() -> Result<(), Box<dyn Error>> {
+        const WHERE: &str = r#""start" = '2022-04-16T10:13:19';"#;
+
+        let pg_url = dotenvy::var("PG_URL")?;
+        let db_url = format!("{pg_url}/{PG_DB_NAME}");
+        let pool_opts = db_url.parse::<PgConnectOptions>()?;
+        let pool = PgPool::connect_with(pool_opts).await?;
+
+        let sql = format!(r#"SELECT * FROM "ne_110m_populated_places_simple" WHERE {WHERE}"#);
+        let safe_sql = AssertSqlSafe(sql);
+        let rows = sqlx::query(safe_sql).fetch_all(&pool).await?;
+        let len = rows.len();
+        tracing::debug!("-- found {len} row(s)");
+        assert_eq!(len, 1);
+        for (ndx, r) in rows.iter().enumerate() {
+            tracing::debug!("-- row #{ndx} = {r:?}");
+        }
+
         Ok(())
     }
 }

@@ -8,9 +8,14 @@
 
 mod csv;
 mod gpkg;
+mod pg;
+mod sql;
+mod types;
 
 pub use csv::*;
 pub use gpkg::*;
+pub use pg::*;
+pub use types::*;
 
 use crate::{Expression, Q};
 use async_trait::async_trait;

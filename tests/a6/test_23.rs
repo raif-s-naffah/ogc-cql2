@@ -13,9 +13,8 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{PlaceCSV, PlaceGPkg, harness, harness_gpkg, harness_sql};
+use crate::utils::{PlaceCSV, PlaceGPkg, PlacePG, harness, harness_gpkg, harness_sql};
 use std::error::Error;
-use tracing_test::traced_test;
 
 #[rustfmt::skip]
 const PREDICATES: [(&str, u32); 11] = [
@@ -38,7 +37,6 @@ const PREDICATES: [(&str, u32); 11] = [
 ];
 
 #[test]
-#[traced_test]
 fn test() -> Result<(), Box<dyn Error>> {
     let ds = PlaceCSV::new();
     harness(ds, &PREDICATES)
@@ -54,8 +52,9 @@ async fn test_gpkg() -> Result<(), Box<dyn Error>> {
 async fn test_sql() -> Result<(), Box<dyn Error>> {
     // IMPORTANT (rsn) 20251112 - predicate #9 is NOT yielding the expected
     // result.  LIKE w/ AccentI+CaseI cases seem to work OK in other cases
-    // and tests, which make me assume the problem is not in the collating
-    // functions, nr is it in the SQL generation, but elsewhere...
+    // (e.g. predicate #8), and tests, which make me assume the problem is
+    // not in the collating functions, nor is it in the SQL generation, but
+    // elsewhere...
     #[rustfmt::skip]
     const PREDICATES: [(&str, u32); 10] = [
         (r#"ACCENTI(name)=accenti('Chișinău')"#,                 1),  // 0
@@ -78,5 +77,11 @@ async fn test_sql() -> Result<(), Box<dyn Error>> {
     ];
 
     let ds = PlaceGPkg::new().await?;
+    harness_sql(ds, &PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_pg_sql() -> Result<(), Box<dyn Error>> {
+    let ds = PlacePG::new().await?;
     harness_sql(ds, &PREDICATES).await
 }

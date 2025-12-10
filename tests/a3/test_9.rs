@@ -20,8 +20,9 @@
 //! [1]: <https://docs.ogc.org/is/21-065r2/21-065r2.html#test-data-predicates-basic-cql2-combinations>
 //!
 
-use crate::utils::places;
-use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome};
+use crate::utils::{PlaceGPkg, PlacePG, places};
+use futures::TryStreamExt;
+use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, StreamableDS};
 use std::error::Error;
 
 #[rustfmt::skip]
@@ -196,21 +197,11 @@ const PREDICATES: [(&str, &str, &str, &str, u32); 83] = [
 
 #[test]
 fn test() -> Result<(), Box<dyn Error>> {
-    // tracing_subscriber::fmt()
-    //     .with_max_level(tracing::Level::DEBUG)
-    //     .init();
-
     let features = places()?;
-
-    // let _c9_ = tracing::span!(tracing::Level::DEBUG, "L1").entered();
-    // let _c9_start = _c9_.enter();
-
     let shared_ctx = Context::new().freeze();
     for (ndx, (p1, p2, p3, p4, expected)) in PREDICATES.iter().enumerate() {
         let input = format!("(NOT ({p2}) AND {p1}) OR ({p3} and {p4}) or not ({p1} OR {p4})");
-        // tracing::debug!("input = {input}");
         let exp = Expression::try_from_text(&input)?;
-        // tracing::debug!("exp = {exp:?}");
 
         let mut evaluator = ExEvaluator::new(shared_ctx.clone());
         evaluator.setup(exp)?;
@@ -221,15 +212,49 @@ fn test() -> Result<(), Box<dyn Error>> {
                 .evaluate(&feat)
                 .expect(&format!("Failed {feat:?}"));
             if matches!(res, Outcome::T) {
-                // tracing::debug!(":) --- {feat:?}\n");
                 actual += 1;
-            } else {
-                // tracing::debug!(":( --- {feat:?}\n");
             }
         }
 
         tracing::debug!("Predicate #{ndx} - actual / expected: {actual} / {expected}");
         assert_eq!(actual, *expected)
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_sql() -> Result<(), Box<dyn Error>> {
+    let ds = PlaceGPkg::new().await?;
+    for (ndx, (p1, p2, p3, p4, expected)) in PREDICATES.iter().enumerate() {
+        let input = format!("(NOT ({p2}) AND {p1}) OR ({p3} and {p4}) or not ({p1} OR {p4})");
+        let exp = Expression::try_from_text(&input)?;
+
+        let mut actual = 0;
+        let mut stream = ds.fetch_where(&exp).await?;
+        while let Some(_) = stream.try_next().await? {
+            actual += 1;
+        }
+        assert_eq!(actual, *expected, "Failed predicate combo #{ndx}");
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+#[ignore = "Works but painfully sloooow :("]
+async fn test_pg_sql() -> Result<(), Box<dyn Error>> {
+    let ds = PlacePG::new().await?;
+    for (ndx, (p1, p2, p3, p4, expected)) in PREDICATES.iter().enumerate() {
+        let input = format!("(NOT ({p2}) AND {p1}) OR ({p3} and {p4}) or not ({p1} OR {p4})");
+        let exp = Expression::try_from_text(&input)?;
+
+        let mut actual = 0;
+        let mut stream = ds.fetch_where(&exp).await?;
+        while let Some(_) = stream.try_next().await? {
+            actual += 1;
+        }
+        assert_eq!(actual, *expected, "Failed predicate combo #{ndx}");
     }
 
     Ok(())

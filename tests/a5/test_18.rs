@@ -14,9 +14,8 @@
 //! * assert successful execution of the evaluation.
 //!
 
-use crate::utils::{PlaceCSV, PlaceGPkg, harness, harness_gpkg, harness_sql};
+use crate::utils::{PlaceCSV, PlaceGPkg, PlacePG, harness, harness_gpkg, harness_sql};
 use std::error::Error;
-use tracing_test::traced_test;
 
 #[rustfmt::skip]
 const PREDICATES: [(&str, &str, &str, &str, u32); 10] = [
@@ -52,7 +51,6 @@ const PREDICATES: [(&str, &str, &str, &str, u32); 10] = [
 ];
 
 #[test]
-#[traced_test]
 fn test() -> Result<(), Box<dyn Error>> {
     // compose the predicates into a single Expression...
     let mut expressions = vec![];
@@ -89,5 +87,19 @@ async fn test_sql() -> Result<(), Box<dyn Error>> {
     let predicates: Vec<(&str, u32)> = expressions.iter().map(|(s, c)| (s.as_str(), *c)).collect();
 
     let ds = PlaceGPkg::new().await?;
+    harness_sql(ds, &predicates).await
+}
+
+#[tokio::test]
+#[ignore = "Works but slow (58+ secs.) :("]
+async fn test_pg_sql() -> Result<(), Box<dyn Error>> {
+    let mut expressions = vec![];
+    for (p1, p2, p3, p4, count) in PREDICATES {
+        let ex = format!("((NOT {p1} AND {p2}) OR ({p3} and NOT {p4}) or not ({p1} AND {p4}))");
+        expressions.push((ex, count));
+    }
+    let predicates: Vec<(&str, u32)> = expressions.iter().map(|(s, c)| (s.as_str(), *c)).collect();
+
+    let ds = PlacePG::new().await?;
     harness_sql(ds, &predicates).await
 }

@@ -15,7 +15,7 @@
 
 use crate::{crs::CRS, srid::SRID};
 use dotenvy::var;
-use std::sync::OnceLock;
+use std::{sync::OnceLock, time::Duration};
 
 const DEFAULT_SRID: usize = 4326;
 const DEFAULT_PRECISION: &str = "7";
@@ -27,6 +27,15 @@ pub(crate) struct Config {
     default_srid: SRID,
     default_crs: String,
     default_precision: usize,
+
+    // PostgreSQL parameters...
+    pg_url: String,
+    pg_max_connections: u32,
+    pg_min_connections: u32,
+    pg_acquire_timeout: Duration,
+    pg_idle_timeout: Duration,
+    pg_max_lifetime: Duration,
+    pg_appname: String,
 }
 
 static CONFIG: OnceLock<Config> = OnceLock::new();
@@ -55,10 +64,45 @@ impl Default for Config {
             panic!("Invalid ({value}) default precision. MUST be <= {MAX_PRECISION}");
         }
 
+        let pg_url = var("PG_URL").expect("Missing PG_URL");
+        let pg_max_connections: u32 = var("PG_MAX_CONNECTIONS")
+            .unwrap_or("8".to_string())
+            .parse()
+            .expect("Failed parsing DB_MAX_CONNECTIONS");
+        let pg_min_connections: u32 = var("PG_MIN_CONNECTIONS")
+            .unwrap_or("4".to_string())
+            .parse()
+            .expect("Failed parsing PG_MIN_CONNECTIONS");
+        let pg_acquire_timeout = Duration::from_secs(
+            var("PG_ACQUIRE_TIMEOUT_SECS")
+                .unwrap_or("8".to_string())
+                .parse()
+                .expect("Failed parsing PG_ACQUIRE_TIMEOUT_SECS"),
+        );
+        let pg_idle_timeout = Duration::from_secs(
+            var("PG_IDLE_TIMEOUT_SECS")
+                .unwrap_or("8".to_string())
+                .parse()
+                .expect("Failed parsing PG_IDLE_TIMEOUT_SECS"),
+        );
+        let pg_max_lifetime = Duration::from_secs(
+            var("PG_MAX_LIFETIME_SECS")
+                .unwrap_or("8".to_string())
+                .parse()
+                .expect("Failed parsing PG_MAX_LIFETIME_SECS"),
+        );
+
         Self {
             default_srid,
             default_crs,
             default_precision: value,
+            pg_url,
+            pg_max_connections,
+            pg_min_connections,
+            pg_acquire_timeout,
+            pg_idle_timeout,
+            pg_max_lifetime,
+            pg_appname: "CQL2".into()
         }
     }
 }
@@ -81,6 +125,34 @@ impl Config {
     /// specific precision parameter.
     pub(crate) fn default_precision(&self) -> usize {
         self.default_precision
+    }
+
+    pub(crate) fn pg_url(&self) -> &str {
+        &self.pg_url
+    }
+
+    pub(crate) fn pg_max_connections(&self) -> u32 {
+        self.pg_max_connections
+    }
+
+    pub(crate) fn pg_min_connections(&self) -> u32 {
+        self.pg_min_connections
+    }
+
+    pub(crate) fn pg_acquire_timeout(&self) -> Duration {
+        self.pg_acquire_timeout
+    }
+
+    pub(crate) fn pg_idle_timeout(&self) -> Duration {
+        self.pg_idle_timeout
+    }
+
+    pub(crate) fn pg_max_lifetime(&self) -> Duration {
+        self.pg_max_lifetime
+    }
+
+    pub(crate) fn pg_appname(&self) -> &str {
+        &self.pg_appname
     }
 }
 

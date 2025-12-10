@@ -41,10 +41,8 @@ use rand::{
     distr::{Distribution, Uniform},
 };
 use std::error::Error;
-use tracing_test::traced_test;
 
 #[test]
-#[traced_test]
 fn test_equal_bool() -> Result<(), Box<dyn Error>> {
     let mut rng = rand::rng();
     let mut random_bool = || rng.random_bool(0.5);
@@ -98,9 +96,6 @@ fn test_equal_bool() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
-    // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
-
     assert_eq!(actual_true1, expect_true1);
     assert_eq!(actual_false1, expect_false1);
     assert_eq!(actual_null1, 0);
@@ -121,7 +116,6 @@ fn test_equal_bool() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_equal_int() -> Result<(), Box<dyn Error>> {
     const MEDIAN: i32 = 1;
     const E1: &str = r#"z_int = 1"#;
@@ -175,9 +169,6 @@ fn test_equal_int() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
-    // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
-
     assert_eq!(actual_true1, expect_true1);
     assert_eq!(actual_false1, expect_false1);
     assert_eq!(actual_null1, 0);
@@ -198,7 +189,6 @@ fn test_equal_int() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_less_int() -> Result<(), Box<dyn Error>> {
     const MEDIAN: i32 = 1;
     const E1: &str = r#"z_int < 1"#;
@@ -253,9 +243,6 @@ fn test_less_int() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
-    // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
-
     assert_eq!(actual_true1, expect_true1);
     assert_eq!(actual_false1, expect_false1);
     assert_eq!(actual_null1, 0);
@@ -276,7 +263,6 @@ fn test_less_int() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_greater_int() -> Result<(), Box<dyn Error>> {
     const MEDIAN: i32 = 1;
     const E1: &str = r#"z_int > 1"#;
@@ -331,9 +317,6 @@ fn test_greater_int() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
-    // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
-
     assert_eq!(actual_true1, expect_true1);
     assert_eq!(actual_false1, expect_false1);
     assert_eq!(actual_null1, 0);
@@ -354,7 +337,6 @@ fn test_greater_int() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_equal_float() -> Result<(), Box<dyn Error>> {
     const MEDIAN: f64 = 3.14;
     const E1: &str = r#"z_float = 3.14"#;
@@ -409,9 +391,6 @@ fn test_equal_float() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
-    // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
-
     assert_eq!(actual_true1, expect_true1);
     assert_eq!(actual_false1, expect_false1);
     assert_eq!(actual_null1, 0);
@@ -432,7 +411,6 @@ fn test_equal_float() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_less_float() -> Result<(), Box<dyn Error>> {
     const MEDIAN: f64 = 3.14;
     const E1: &str = r#"z_float < 3.14"#;
@@ -487,9 +465,6 @@ fn test_less_float() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
-    // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
-
     assert_eq!(actual_true1, expect_true1);
     assert_eq!(actual_false1, expect_false1);
     assert_eq!(actual_null1, 0);
@@ -510,7 +485,6 @@ fn test_less_float() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_greater_float() -> Result<(), Box<dyn Error>> {
     const MEDIAN: f64 = 3.14;
     const E1: &str = r#"z_float > 3.14"#;
@@ -565,9 +539,6 @@ fn test_greater_float() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
-    // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
-
     assert_eq!(actual_true1, expect_true1);
     assert_eq!(actual_false1, expect_false1);
     assert_eq!(actual_null1, 0);
@@ -588,7 +559,6 @@ fn test_greater_float() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_equal_timestamp() -> Result<(), Box<dyn Error>> {
     let time: Timestamp = "2022-04-14T14:48:46Z".parse()?;
     let median: i128 = time.as_nanosecond();
@@ -643,9 +613,6 @@ fn test_equal_timestamp() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
-    // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
-
     assert_eq!(actual_true1, expect_true1);
     assert_eq!(actual_false1, expect_false1);
     assert_eq!(actual_null1, 0);
@@ -666,7 +633,6 @@ fn test_equal_timestamp() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_less_timestamp() -> Result<(), Box<dyn Error>> {
     let time: Timestamp = "2022-04-14T14:48:46Z".parse()?;
     let median: i128 = time.as_nanosecond();
@@ -722,9 +688,6 @@ fn test_less_timestamp() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
-    // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
-
     assert_eq!(actual_true1, expect_true1);
     assert_eq!(actual_false1, expect_false1);
     assert_eq!(actual_null1, 0);
@@ -745,7 +708,6 @@ fn test_less_timestamp() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_greater_timestamp() -> Result<(), Box<dyn Error>> {
     let time: Timestamp = "2022-04-14T14:48:46Z".parse()?;
     let median: i128 = time.as_nanosecond();
@@ -801,9 +763,6 @@ fn test_greater_timestamp() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
-    // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
-
     assert_eq!(actual_true1, expect_true1);
     assert_eq!(actual_false1, expect_false1);
     assert_eq!(actual_null1, 0);
@@ -824,7 +783,6 @@ fn test_greater_timestamp() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_equal_date() -> Result<(), Box<dyn Error>> {
     let median: Date = "2022-04-14".parse()?;
     const E1: &str = r#"z_date = date('2022-04-14')"#;
@@ -876,9 +834,6 @@ fn test_equal_date() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
-    // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
-
     assert_eq!(actual_true1, expect_true1);
     assert_eq!(actual_false1, expect_false1);
     assert_eq!(actual_null1, 0);
@@ -899,7 +854,6 @@ fn test_equal_date() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_less_date() -> Result<(), Box<dyn Error>> {
     let median: Date = "2022-04-14".parse()?;
     const E1: &str = r#"z_date < Date('2022-04-14')"#;
@@ -951,9 +905,6 @@ fn test_less_date() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
-    // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
-
     assert_eq!(actual_true1, expect_true1);
     assert_eq!(actual_false1, expect_false1);
     assert_eq!(actual_null1, 0);
@@ -974,7 +925,6 @@ fn test_less_date() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_greater_date() -> Result<(), Box<dyn Error>> {
     let median: Date = "2022-04-14".parse()?;
     const E1: &str = r#"z_date > Date('2022-04-14')"#;
@@ -1026,9 +976,6 @@ fn test_greater_date() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
-    // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
-
     assert_eq!(actual_true1, expect_true1);
     assert_eq!(actual_false1, expect_false1);
     assert_eq!(actual_null1, 0);
@@ -1049,7 +996,6 @@ fn test_greater_date() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_equal_str() -> Result<(), Box<dyn Error>> {
     let median: &str = "foo";
     const E1: &str = r#"z_string = 'foo'"#;
@@ -1105,9 +1051,6 @@ fn test_equal_str() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
-    // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
-
     assert_eq!(actual_true1, expect_true1);
     assert_eq!(actual_false1, expect_false1);
     assert_eq!(actual_null1, 0);
@@ -1128,7 +1071,6 @@ fn test_equal_str() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_less_str() -> Result<(), Box<dyn Error>> {
     let median: &str = "foo";
     const E1: &str = r#"z_string < 'foo'"#;
@@ -1183,9 +1125,6 @@ fn test_less_str() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
-    // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
-
     assert_eq!(actual_true1, expect_true1);
     assert_eq!(actual_false1, expect_false1);
     assert_eq!(actual_null1, 0);
@@ -1206,7 +1145,6 @@ fn test_less_str() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_greater_str() -> Result<(), Box<dyn Error>> {
     let median: &str = "foo";
     const E1: &str = r#"z_string > 'foo'"#;
@@ -1260,9 +1198,6 @@ fn test_greater_str() -> Result<(), Box<dyn Error>> {
             Outcome::N => actual_null2 += 1,
         }
     }
-
-    // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
-    // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
 
     assert_eq!(actual_true1, expect_true1);
     assert_eq!(actual_false1, expect_false1);

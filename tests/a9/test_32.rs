@@ -17,9 +17,8 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{CountryCSV, CountryGPkg, harness, harness_gpkg, harness_sql};
+use crate::utils::{CountryCSV, CountryGPkg, CountryPG, harness, harness_gpkg, harness_sql};
 use std::error::Error;
-use tracing_test::traced_test;
 
 // Countries data set contains 177 records all being polygons...
 #[rustfmt::skip]
@@ -30,7 +29,6 @@ const PREDICATES: [(&str, u32); 3] = [
 ];
 
 #[test]
-#[traced_test]
 fn test() -> Result<(), Box<dyn Error>> {
     let ds = CountryCSV::new();
     harness(ds, &PREDICATES)
@@ -45,5 +43,11 @@ async fn test_gpkg() -> Result<(), Box<dyn Error>> {
 #[tokio::test]
 async fn test_sql() -> Result<(), Box<dyn Error>> {
     let ds = CountryGPkg::new().await?;
+    harness_sql(ds, &PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_pg_sql() -> Result<(), Box<dyn Error>> {
+    let ds = CountryPG::new().await?;
     harness_sql(ds, &PREDICATES).await
 }

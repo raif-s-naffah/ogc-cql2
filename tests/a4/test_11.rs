@@ -17,10 +17,8 @@
 use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use rand::{Rng, distr::Uniform};
 use std::error::Error;
-use tracing_test::traced_test;
 
 #[test]
-#[traced_test]
 fn test() -> Result<(), Box<dyn Error>> {
     const E1: &str = r#"foo BETWEEN 0 AND 100"#;
     const E2: &str = r#"foo between 100.0 and 1.0"#;
@@ -31,11 +29,9 @@ fn test() -> Result<(), Box<dyn Error>> {
     let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     let input1 = format!("{E1}");
     let exp1 = Expression::try_from_text(&input1)?;
-    // tracing::debug!("exp1 = {exp1:?}");
     let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
     let input2 = format!("{E2}");
     let exp2 = Expression::try_from_text(&input2)?;
-    // tracing::debug!("exp2 = {exp2:?}");
 
     evaluator1.setup(exp1)?;
     evaluator2.setup(exp2)?;
@@ -56,16 +52,15 @@ fn test() -> Result<(), Box<dyn Error>> {
         let res1 = evaluator1.evaluate(&feat)?;
         match res1 {
             Outcome::T => actual1 += 1,
-            _ => (), // tracing::debug!("Outsider #1: {feat:?}"),
+            _ => (),
         }
         let res2 = evaluator2.evaluate(&feat)?;
         match res2 {
             Outcome::T => actual2 += 1,
-            _ => (), // tracing::debug!("Outsider #2: {feat:?}"),
+            _ => (),
         }
     }
 
-    // tracing::debug!("expected/actuals = {expected}, {actual1}, {actual2}");
     assert_eq!(actual1, expected);
     assert_eq!(actual2, expected);
     Ok(())

@@ -5,13 +5,13 @@
 //! can be used by the library.
 //!
 
-use crate::utils::GPKG_URL;
+use crate::utils::{GPKG_URL, PG_DB_NAME};
 use core::fmt;
 use futures::{StreamExt, TryStreamExt};
 use ogc_cql2::prelude::*;
 use serde::Deserialize;
-use sqlx::{AssertSqlSafe, FromRow};
-use std::{collections::HashMap, error::Error, fs::File, marker::PhantomData};
+use sqlx::FromRow;
+use std::{collections::HashMap, error::Error, marker::PhantomData};
 
 const RIVERS_CSV: &str = "./tests/samples/data/ne_110m_rivers_lake_centerlines.csv";
 const RIVERS_TBL: &str = "ne_110m_rivers_lake_centerlines";
@@ -82,6 +82,29 @@ gen_gpkg_ds!(
     TRiver
 );
 
+// ============================================================================
+
+#[derive(Debug, FromRow)]
+pub(crate) struct LRiver {
+    fid: i32,
+    name: String,
+    geom: G,
+}
+
+impl TryFrom<LRiver> for Resource {
+    type Error = MyError;
+
+    fn try_from(value: LRiver) -> Result<Self, Self::Error> {
+        Ok(HashMap::from([
+            ("fid".into(), Q::try_from(value.fid)?),
+            ("name".into(), Q::new_plain_str(&value.name)),
+            ("geom".into(), Q::Geom(value.geom)),
+        ]))
+    }
+}
+
+gen_pg_ds!(pub(crate), "River", PG_DB_NAME, RIVERS_TBL, LRiver);
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -145,6 +168,24 @@ mod tests {
             // all geometries are valid mulyi-polygons...
             let queryable = r.get("geom").expect("Missing 'geom'");
             let g = queryable.to_geom()?;
+            assert_eq!(g.type_(), "LineString");
+        }
+
+        // layer contains 13 features...
+        assert_eq!(count, 13);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_pg() -> Result<(), Box<dyn Error>> {
+        let mut count = 0;
+        let ds = RiverPG::new().await?;
+        let mut stream = ds.stream().await?;
+        while let Some(c) = stream.try_next().await? {
+            count += 1;
+            let queryable = c.get("geom").expect("Missing 'geom'");
+            let g = queryable.to_geom()?;
+            // all geometries are valid line-strings...
             assert_eq!(g.type_(), "LineString");
         }
 

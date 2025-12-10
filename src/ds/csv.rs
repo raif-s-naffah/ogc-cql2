@@ -51,8 +51,8 @@ macro_rules! gen_csv_ds {
                 }
 
                 /// Return a file reader that deserializes rows into features.
-                $vis fn reader(&self) -> Result<::csv::Reader<File>, MyError> {
-                    let file = File::open(self.0.path())?;
+                $vis fn reader(&self) -> Result<::csv::Reader<::std::fs::File>, MyError> {
+                    let file = ::std::fs::File::open(self.0.path())?;
                     Ok(::csv::Reader::from_reader(file))
                 }
             }
@@ -68,7 +68,7 @@ macro_rules! gen_csv_ds {
                 type Err = MyError;
 
                 fn iter(&self) -> Result<impl Iterator<Item = Result<$feature, Self::Err>>, Self::Err> {
-                    let file = File::open(&self.0.path())?;
+                    let file = ::std::fs::File::open(&self.0.path())?;
                     let rdr = ::csv::Reader::from_reader(file);
                     let it = rdr.into_deserialize().map(|res| res.map_err(MyError::from));
                     Ok(it)

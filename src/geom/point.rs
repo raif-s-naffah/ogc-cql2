@@ -58,7 +58,7 @@ impl Point {
     }
 
     pub(crate) fn from_xy(coord: XY1V) -> Self {
-        Self::from_xy_and_srid(coord, SRID::default())
+        Self::from_xy_and_srid(coord, *config().default_srid())
     }
 
     pub(crate) fn from_xy_and_srid(coord: XY1V, srid: SRID) -> Self {

@@ -73,7 +73,7 @@ impl Lines {
     }
 
     pub(crate) fn from_xy(lines: XY3V) -> Self {
-        Self::from_xy_and_srid(lines, SRID::default())
+        Self::from_xy_and_srid(lines, *config().default_srid())
     }
 
     pub(crate) fn from_xy_and_srid(lines: XY3V, srid: SRID) -> Self {

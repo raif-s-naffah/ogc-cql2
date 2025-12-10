@@ -2,215 +2,147 @@
 
 #![warn(missing_docs)]
 
-//! Artifacts specific to handling geospatial data stored in GeoPackage database
-//! files.
+//! Artifacts specific to handling geospatial data stored in a PostGIS database
+//! table.
 //!
 
 use crate::{
-    CRS, E, Expression, MyError, QString,
-    config::config,
-    ds::{DataSource, sql::MIN_DATE_SQL},
+    DataSource, Expression, MyError, QString, config::config, ds::sql::MIN_DATE_SQL, expr::E,
     op::Op,
 };
-use sqlx::{AssertSqlSafe, FromRow, Pool, Sqlite, pool::PoolOptions, sqlite::SqliteConnectOptions};
-use std::{cmp::Ordering, str::FromStr};
-use tracing::{debug, info};
-use unicode_normalization::{UnicodeNormalization, char::is_combining_mark};
+use sqlx::{
+    AssertSqlSafe, FromRow, PgPool,
+    postgres::{PgConnectOptions, PgPoolOptions},
+};
+use tracing::debug;
 
-const GPKG_APPLICATION_ID: i32 = 0x47504B47;
-const FIND_TABLE: &str = "SELECT * FROM gpkg_contents WHERE table_name = $1";
-const FIND_SRS: &str = "SELECT * FROM gpkg_spatial_ref_sys WHERE srs_id = $1";
-const EPSG_AUTH: &str = "EPSG";
+const FIND_TABLE: &str = "SELECT * FROM geometry_columns WHERE f_table_name = $1";
+// Name of a collation that is case-insensitive. For PostgreSQL that's level 2.
+const CQL2_CI: &str = "cql2_ci";
+// Name of collation that is accent-insensitive. For PostgreSQL that's level 2.5
+const CQL2_AI: &str = "cql2_ai";
+// Name of a collation that is both case- and accent-insensitive. For
+// PostgreSQL that's level 1.
+const CQL2_CAI: &str = "cql2_ci_ai";
+// Name of PostgreSQL builtin collation that correctly orders Unicode strings
+// comparisons...
+const PG_UNICODE: &str = "pg_unicode_fast";
 
-/// Name of a collation that is case-insensitive.
-const CQL2_CI: &str = "CQL2_CI";
-/// Name of a collation that is accent-insensitive.
-const CQL2_AI: &str = "CQL2_AI";
-/// Name of a collation that is both case- and accent-insensitive.
-const CQL2_CAI: &str = "CQL2_CI_AI";
-
-// structure to read back a textual PRAGMA value.
+// structure to read back a textual value.
 #[derive(Debug, FromRow)]
 struct Pragma(String);
 
-// Structure to use when SQL query is returning an integer be it a row ID or a
-// numeric PRAGMA value.
-#[derive(Debug, FromRow)]
-struct RowID(i32);
-
-// Partial representation of a `gpkg_spatial_ref_sys` table row.
-#[derive(Debug, FromRow)]
-struct TSpatialRefSys {
-    organization: String,
-    organization_coordsys_id: i32,
-}
-
-// Partial representation of a GeoPackage `gpkg_contents` table row.
+// Partial representation of a PostGIS `geometry_columns` table row.
 #[allow(dead_code)]
 #[derive(Debug, FromRow)]
-pub(crate) struct TContents {
-    table_name: String,
-    data_type: String,
-    srs_id: Option<i32>,
+pub(crate) struct TGeometryColumn {
+    f_table_name: String,
+    f_geometry_column: String,
+    coord_dimension: i32,
+    srid: i32,
+    #[sqlx(rename = "type")]
+    type_: String,
 }
 
-/// _GeoPackage_ [`DataSource`] binding a `.gpkg` database file + a layer name that
+/// [`DataSource`] binding a _PostGIS_ enabled database + a table name that
 /// maps rows to _Features_ and [Resources][crate::Resource].
 #[derive(Debug)]
 #[allow(dead_code)]
-pub struct GPkgDataSource {
-    layer: String,
-    pool: Pool<Sqlite>,
-    srid: Option<u32>,
+pub struct PGDataSource {
+    db_name: String,
+    table: String,
+    pool: PgPool,
+    srid: u32,
 }
 
-impl DataSource for GPkgDataSource {}
+impl DataSource for PGDataSource {}
 
-impl GPkgDataSource {
+impl PGDataSource {
     /// Constructor.
-    pub async fn from(gpkg_url: &str, layer_name: &str) -> Result<Self, MyError> {
-        // FIXME (rsn) 20251023 - allow configuring the pool from environment
-        // variables.
+    pub async fn from(db_name: &str, table: &str) -> Result<Self, MyError> {
+        // concatenate server URL w/ DB name...
+        let pg_server_url = config().pg_url();
+        let url = format!("{pg_server_url}/{db_name}");
+        // parse it to start w/ a useful connection options instance...
+        let pool_opts = url
+            .parse::<PgConnectOptions>()?
+            .application_name(config().pg_appname());
+        // configure connection parameters + make a pool...
+        let pool = PgPoolOptions::new()
+            .min_connections(config().pg_min_connections())
+            .max_connections(config().pg_max_connections())
+            .acquire_timeout(config().pg_acquire_timeout())
+            .idle_timeout(config().pg_idle_timeout())
+            .max_lifetime(config().pg_max_lifetime())
+            .connect_with(pool_opts)
+            .await?;
 
-        // closure for case-insesnitive string comparisons.
-        // let collate_ci = |a: &str, b: &str| QString::cmp_ci(a, b);
-        let collate_ci = |a: &str, b: &str| cmp_ci(a, b);
-
-        // closure for accent-insensitive string comparisons.
-        let collate_ai = |a: &str, b: &str| cmp_ai(a, b);
-
-        // closure for accent- and case-insensitive string comparisons.
-        let collate_aci = |a: &str, b: &str| cmp_aci(a, b);
-
-        // IMPORTANT - this is UNSAFE but i have no control over how to do it
-        // differently since handling GeoPackage data sources is a no go w/o
-        // `spatialite`...
-        let pool_opts = unsafe {
-            SqliteConnectOptions::from_str(gpkg_url)?
-                .extension("mod_spatialite")
-                .collation(CQL2_CI, collate_ci)
-                .collation(CQL2_AI, collate_ai)
-                .collation(CQL2_CAI, collate_aci)
-        };
-
-        let pool = PoolOptions::new().connect_with(pool_opts).await?;
-
-        // GeoPackage SQLite DB files are expected to have 0x47504B47 (or 1196444487)
-        // as their `application_id` in the DB header.
-        let pragma = sqlx::query_as::<_, RowID>("PRAGMA application_id")
+        // ensure DB has PostGIS extension installed...  do this by selecting
+        // the PostGIS_Version() function.  an OK result will suffice for now...
+        let pargma = sqlx::query_as::<_, Pragma>("SELECT PostGIS_Version();")
             .fetch_one(&pool)
             .await?;
-        let application_id = pragma.0;
-        if application_id != GPKG_APPLICATION_ID {
-            return Err(MyError::Runtime("Unexpected application_id".into()));
-        }
+        let v = pargma.0;
+        debug!("PostGIS Version = {v}");
 
-        // ensure it passes integerity checks...
-        let pragma = sqlx::query_as::<_, Pragma>("PRAGMA integrity_check")
+        // ensure table exists, has a geometry column and an SRID.
+        let row = sqlx::query_as::<_, TGeometryColumn>(FIND_TABLE)
+            .bind(table)
             .fetch_one(&pool)
             .await?;
-        if pragma.0 != "ok" {
-            return Err(MyError::Runtime("Failed integrity_check".into()));
-        }
+        debug!("geometry_column = {row:?}");
+        // ...
+        let srid = u32::try_from(row.srid)?;
 
-        // ensure it has no invalid foreign key values...
-        let fk_values: Vec<_> = sqlx::query("PRAGMA foreign_key_check")
-            .fetch_all(&pool)
-            .await?;
-        if !fk_values.is_empty() {
-            return Err(MyError::Runtime("Found invalid FK value(s)".into()));
-        }
+        // set time zone to UTC...
+        let sql = "SET TIME ZONE 'UTC';";
+        let safe_sql = AssertSqlSafe(sql);
+        sqlx::query(safe_sql).execute(&pool).await?;
 
-        // ensure designated layer/table exists...
-        let layer = sqlx::query_as::<_, TContents>(FIND_TABLE)
-            .bind(layer_name)
-            .fetch_one(&pool)
-            .await?;
-        // we only handle vector-based features, not tiles. check...
-        if layer.data_type != "features" {
-            return Err(MyError::Runtime("Layer is NOT vector-based".into()));
-        }
-
-        // also create a virtual table using `spatialite` _VirtualGPKG_...
+        // create collations...
+        // ignore case
         let sql = format!(
-            r#"CREATE VIRTUAL TABLE IF NOT EXISTS "vgpkg_{0}" USING VirtualGPKG("{0}");"#,
-            layer_name
+            r#"CREATE COLLATION IF NOT EXISTS "{CQL2_CI}" (provider = icu, deterministic = false, locale = 'und-u-ks-level2');"#
+        );
+        let safe_sql = AssertSqlSafe(sql);
+        sqlx::query(safe_sql).execute(&pool).await?;
+        // ignore accents...
+        let sql = format!(
+            r#"CREATE COLLATION IF NOT EXISTS "{CQL2_AI}" (provider = icu, deterministic = false, locale = 'und-u-ks-level1-kc-true');"#
+        );
+        let safe_sql = AssertSqlSafe(sql);
+        sqlx::query(safe_sql).execute(&pool).await?;
+        // ignore both...
+        let sql = format!(
+            r#"CREATE COLLATION IF NOT EXISTS "{CQL2_CAI}" (provider = icu, deterministic = false, locale = 'und-u-ks-level1');"#
         );
         let safe_sql = AssertSqlSafe(sql);
         sqlx::query(safe_sql).execute(&pool).await?;
 
-        let srid = match layer.srs_id {
-            // NOTE (rsn) 20251021 - the specs mandate the support for at least
-            // 3 values: `4326`, `-1`, and `0` w/ the last 2 to indicate an
-            // "undefined" cartesian or geographic system respectively.  ensure
-            // we can represent it as a valid CRS but only if it's not an
-            // undefined standard indicator...
-            Some(fk) => match fk {
-                -1 => {
-                    info!("GeoPackage uses the undefined Cartesian SRS");
-                    None
-                }
-                0 => {
-                    info!("GeoPackage uses the undefined geographic SRS");
-                    None
-                }
-                x => {
-                    // NOTE (rsn) 20251023 - while the specs mandate the support
-                    // for a `4326` value, there's no guarantee that this is in
-                    // fact the EPSG:4326 SRS code.  what is guaranteed is that
-                    // it's a foreign key into: `gpkg_spatial_ref_sys`.
-                    let srs = sqlx::query_as::<_, TSpatialRefSys>(FIND_SRS)
-                        .bind(x)
-                        .fetch_one(&pool)
-                        .await?;
-                    // FIXME (rsn) 20251024 - handle other authorities.
-                    let authority = srs.organization;
-                    if !authority.eq_ignore_ascii_case(EPSG_AUTH) {
-                        return Err(MyError::Runtime(
-                            format!("Unexpected ({authority}) Authority").into(),
-                        ));
-                    }
-
-                    let it = srs.organization_coordsys_id;
-                    let epsg_code = format!("{authority}:{x}");
-                    // raise an error if Proj cannot handle it...
-                    let _ = CRS::new(&epsg_code)?;
-                    Some(u32::try_from(it)?)
-                }
-            },
-            None => None,
-        };
-        debug!("srid = {srid:?}");
-
         Ok(Self {
-            layer: layer_name.to_owned(),
+            db_name: db_name.to_owned(),
+            table: table.to_owned(),
             pool,
             srid,
         })
     }
 
-    /// Return a reference to the connection pool.
-    pub fn pool(&self) -> &Pool<Sqlite> {
+    /// Return this pool.
+    pub fn pool(&self) -> &PgPool {
         &self.pool
     }
 
-    /// Return name of the virtual table created for querying this
-    /// GeoPackage table.
-    ///
-    /// This name is manufactured by pre-pending "vgpkg_" to the layer name
-    /// in a similar way to how `spatialite` handles _GeoPackage_ files.
-    pub fn vtable(&self) -> String {
-        format!("vgpkg_{}", self.layer)
+    /// Return name of the table housing the data.
+    pub fn table(&self) -> &str {
+        &self.table
     }
 
     /// Transform given [Expression] to an SQL _WHERE_ clause that can be used
     /// for selecting a subset of this data source items.
     pub fn to_sql(&self, exp: &Expression) -> Result<String, MyError> {
         let mut e = exp.to_inner()?;
-        let it = E::reduce(&mut e)?;
-        let res = self.to_sql_impl(it);
-        debug!("to_sql: {res:?}");
-        res
+        let reduced = E::reduce(&mut e)?;
+        self.to_sql_impl(reduced)
     }
 
     fn to_sql_impl(&self, exp: E) -> Result<String, MyError> {
@@ -224,7 +156,7 @@ impl GPkgDataSource {
             E::Date(x) => Ok(format!("'{}'", x.date())),
             E::Timestamp(x) => Ok(format!("'{}'", x.datetime())),
             E::Spatial(x) => Ok(x.to_sql()?),
-            E::Id(x) => Ok(x.to_owned()),
+            E::Id(x) => Ok(double_quoted(x)),
             // some work need to be done when handling these options...
             E::Monadic(op, x) if op.nullable() => {
                 let is_literal = x.is_literal_or_id();
@@ -347,26 +279,16 @@ impl GPkgDataSource {
                 let params_ = params?;
                 Ok(format!("{}({})", x.name, params_.join(", ")))
             }
-            // NOTE (rsn) 20251105 - SQLite does not accept array elements w/in
-            // square brackets; only parenthesis...
             E::Array(x) => {
                 let items: Result<Vec<String>, MyError> =
                     x.into_iter().map(|x| self.to_sql_impl(x)).collect();
                 let items_ = items?;
                 Ok(format!("({})", items_.join(", ")))
             }
-            x => unreachable!("{x:?} cannot be translated to SQL"),
+            x => unreachable!("{x:?} cannot be transformed to SQL"),
         }
     }
 
-    // NOTE (rsn) 20251120 - Some spatial functions (i.e. `ST_Within`, `ST_Covers`,
-    // and `ST_Touches`) w/ GeoPackage data sources do NOT yield same results to
-    // those obtained when directly using GEOS, when one of the arguments is a table
-    // column.
-    // we work around this by applying `ST_ReducePrecision` *before* calling those
-    // functions. the precision value used in those instances is the same one
-    // configured as the default (see DEFAULT_PRECISION in `config::config()`) which
-    // we already use when outputing WKT strings...
     fn reduce_precision(&self, op: Op, a: E, b: E) -> Result<String, MyError> {
         let a_is_id = a.is_id();
         let b_is_id = b.is_id();
@@ -668,35 +590,22 @@ impl GPkgDataSource {
     }
 }
 
-/// Return the [Ordering] when comparing `a` to `b` ignoring case.
-fn cmp_ci(a: &str, b: &str) -> Ordering {
-    a.to_lowercase().cmp(&b.to_lowercase())
+/// Render a given string as surrounded by double-quotes unless it already is.
+fn double_quoted(s: String) -> String {
+    // if already surrounded by double-quotes, return as is...
+    if s.starts_with('"') && s.ends_with('"') {
+        s
+    } else {
+        format!("\"{s}\"")
+    }
 }
 
-/// Return the [Ordering] when comparing `a` to `b` ignoring accents.
-fn cmp_ai(a: &str, b: &str) -> Ordering {
-    let lhs = a.nfd().filter(|x| !is_combining_mark(*x)).nfc();
-    let rhs = b.nfd().filter(|x| !is_combining_mark(*x)).nfc();
-    lhs.cmp(rhs)
-}
-
-/// Return the [Ordering] when comparing `a` to `b` ignoring both accents
-/// and case.
-fn cmp_aci(a: &str, b: &str) -> Ordering {
-    let x = a.to_lowercase();
-    let y = b.to_lowercase();
-    let lhs = x.nfd().filter(|x| !is_combining_mark(*x)).nfc();
-    let rhs = y.nfd().filter(|x| !is_combining_mark(*x)).nfc();
-    lhs.cmp(rhs)
-}
-
-/// Generate a string that can be used in composing an SQL WHERE clause.
 fn qstr_to_sql(qs: QString) -> Result<String, MyError> {
     match qs.flags() {
-        0 => Ok(format!("'{}'", qs.inner())),
-        1 => Ok(format!("'{}' COLLATE {CQL2_CI}", qs.inner())),
-        2 => Ok(format!("'{}' COLLATE {CQL2_AI}", qs.inner())),
-        3 => Ok(format!("'{}' COLLATE {CQL2_CAI}", qs.inner())),
+        0 => Ok(format!(r#"'{}' COLLATE "{PG_UNICODE}""#, qs.inner())),
+        1 => Ok(format!(r#"'{}' COLLATE "{CQL2_CI}""#, qs.inner())),
+        2 => Ok(format!(r#"'{}' COLLATE "{CQL2_AI}""#, qs.inner())),
+        3 => Ok(format!(r#"'{}' COLLATE "{CQL2_CAI}""#, qs.inner())),
         x => {
             let msg = format!("String w/ '{x}' flags has NO direct SQL representation");
             Err(MyError::Runtime(msg.into()))
@@ -704,63 +613,63 @@ fn qstr_to_sql(qs: QString) -> Result<String, MyError> {
     }
 }
 
-/// Macro to generate a concrete [GPkgDataSource].
+/// Macro to generate a concrete [PGDataSource].
 ///
 /// Caller must provide the following parameters:
 /// * `$vis`: Visibility specifier of the generated artifacts; e.g. `pub(crate)`.
 /// * `$name`: Prefix of the concrete data source structure name to materialize.
-///   The final name will have a 'GPkg' suffix appended; eg. `Foo` -> `FooGPkg`.
-/// * `$gpkg_url`: Database URL to an accessible _GeoPackage_ DB; e.g.
-///   `sqlite:path/to/a/geo_package.gpkg`
-/// * `$layer`: Name of the table/layer containing the features' data.
-/// * `$feature`: `sqlx` _FromRow_ convertible structure to map database layer
-///   table rows to _Features_.
+///   The final name will have a 'PG' suffix appended; eg. `Foo` -> `FooPG`.
+/// * `$db_url`: Database URL to an accessible _PostgreSQL_ DB; e.g.
+///   `postgres:user:password@host:port/db_name`
+/// * `$table`: Name of the table containing the features' data.
+/// * `$feature`: `sqlx` _FromRow_ convertible structure to map database table
+///   rows to _Features_.
 #[macro_export]
-macro_rules! gen_gpkg_ds {
-    ($vis:vis, $name:expr, $gpkg_url:expr, $layer:expr, $feature:expr) => {
+macro_rules! gen_pg_ds {
+    ($vis:vis, $name:expr, $db_url:expr, $table:expr, $feature:expr) => {
         paste::paste! {
-            /// Concrete GeoPackage source.
-            $vis struct [<$name GPkg>](GPkgDataSource);
+            /// Concrete PostgreSQL+PostGIS source.
+            $vis struct [<$name PG>](PGDataSource);
 
-            impl [<$name GPkg>] {
+            impl [<$name PG>] {
                 /// Constructor.
                 $vis async fn new() -> Result<Self, MyError> {
-                    let gpkp = GPkgDataSource::from($gpkg_url, $layer).await?;
-                    Ok(Self(gpkp))
+                    let ds = PGDataSource::from($db_url, $table).await?;
+                    Ok(Self(ds))
                 }
 
-                /// Convert a GeoPackage row (aka Feature) to a generic Resource.
+                /// Convert a row (aka Feature) to a generic Resource.
                 $vis fn to_resource(r: $feature) -> Result<Resource, Box<dyn Error>> {
                     let row = $feature::try_from(r)?;
                     Ok(Resource::try_from(row)?)
                 }
 
                 /// Convenience method. Calls inner's samilarly named method.
-                $vis fn vtable(&self) -> String {
-                    self.0.vtable()
+                $vis fn table(&self) -> &str {
+                    self.0.table()
                 }
 
                 /// Return a reference to the inner model data source.
-                $vis fn inner(&self) -> &GPkgDataSource {
+                $vis fn inner(&self) -> &PGDataSource {
                     &self.0
                 }
             }
 
-            impl ::core::fmt::Display for [<$name GPkg>] {
+            impl ::core::fmt::Display for [<$name PG>] {
                 fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-                    write!(f, "{}GPkg({})", $name, $layer)
+                    write!(f, "{}PG({})", $name, $table)
                 }
             }
 
             #[::async_trait::async_trait]
-            impl StreamableDS for [<$name GPkg>] {
+            impl StreamableDS for [<$name PG>] {
                 type Item = $feature;
                 type Err = MyError;
 
                 async fn fetch(
                     &self
                 ) -> Result<::futures::stream::BoxStream<'_, Result<$feature, MyError>>, MyError> {
-                    let sql = format!("SELECT * FROM {}", $layer);
+                    let sql = format!("SELECT * FROM {};", $table);
                     let safe_sql = ::sqlx::AssertSqlSafe(sql);
                     let it = sqlx::query_as::<_, $feature>(safe_sql)
                         .fetch(self.0.pool())
@@ -788,7 +697,8 @@ macro_rules! gen_gpkg_ds {
                     exp: &Expression,
                 ) -> Result<::futures::stream::BoxStream<'_, Result<$feature, MyError>>, MyError> {
                     let where_clause = self.0.to_sql(exp)?;
-                    let sql = format!(r#"SELECT * FROM "{}" WHERE {}"#, self.vtable(), where_clause);
+                    let sql = format!(r#"SELECT * FROM "{}" WHERE {};"#, self.table(), where_clause);
+                    tracing::debug!("-- sql = {sql}");
                     let safe_sql = ::sqlx::AssertSqlSafe(sql);
                     let it = sqlx::query_as::<_, $feature>(safe_sql)
                         .fetch(self.0.pool())
@@ -814,42 +724,4 @@ macro_rules! gen_gpkg_ds {
             }
         }
     };
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_cmp_ci() {
-        let eq = cmp_ci("abc", "ABC");
-        assert_eq!(eq, Ordering::Equal);
-
-        let eq = cmp_ci("ABC", "abc");
-        assert_eq!(eq, Ordering::Equal);
-
-        let eq = cmp_ci("aBc", "AbC");
-        assert_eq!(eq, Ordering::Equal);
-
-        let eq = cmp_ci("abcd", "ABCe");
-        assert_eq!(eq, Ordering::Less);
-
-        let eq = cmp_ci("bcd", "ACz");
-        assert_eq!(eq, Ordering::Greater);
-    }
-
-    #[test]
-    fn test_cmp_ai() {
-        let eq = cmp_ai("ÁBC", "ABC");
-        assert_eq!(eq, Ordering::Equal);
-
-        let eq = cmp_ai("ÁBC", "ABÇ");
-        assert_eq!(eq, Ordering::Equal);
-    }
-
-    #[test]
-    fn test_cmp_aci() {
-        let eq = cmp_aci("ábc", "ABÇ");
-        assert_eq!(eq, Ordering::Equal);
-    }
 }

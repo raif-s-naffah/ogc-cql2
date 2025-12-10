@@ -13,11 +13,10 @@
 //!
 
 use crate::utils::{
-    CountryCSV, CountryGPkg, PlaceCSV, PlaceGPkg, RiverCSV, RiverGPkg, harness, harness_gpkg,
-    harness_sql,
+    CountryCSV, CountryGPkg, CountryPG, PlaceCSV, PlaceGPkg, PlacePG, RiverCSV, RiverGPkg, RiverPG,
+    harness, harness_gpkg, harness_sql,
 };
 use std::error::Error;
-use tracing_test::traced_test;
 
 #[rustfmt::skip]
 const COUNTRIES_PREDICATES: [(&str, u32); 6] = [
@@ -35,7 +34,6 @@ const PLACES_PREDICATES: [(&str, u32); 1] = [(r#"S_INTERSECTS(geom,BBOX(0,40,10,
 const RIVERS_PREDICATES: [(&str, u32); 1] = [(r#"S_INTERSECTS(geom,BBOX(-180,-90,0,90))"#, 4)];
 
 #[test]
-#[traced_test]
 fn test_countries() -> Result<(), Box<dyn Error>> {
     let ds = CountryCSV::new();
     harness(ds, &COUNTRIES_PREDICATES)
@@ -53,8 +51,13 @@ async fn test_countries_sql() -> Result<(), Box<dyn Error>> {
     harness_sql(ds, &COUNTRIES_PREDICATES).await
 }
 
+#[tokio::test]
+async fn test_countries_pg_sql() -> Result<(), Box<dyn Error>> {
+    let ds = CountryPG::new().await?;
+    harness_sql(ds, &COUNTRIES_PREDICATES).await
+}
+
 #[test]
-#[traced_test]
 fn test_places() -> Result<(), Box<dyn Error>> {
     let ds = PlaceCSV::new();
     harness(ds, &PLACES_PREDICATES)
@@ -72,8 +75,13 @@ async fn test_places_sql() -> Result<(), Box<dyn Error>> {
     harness_sql(ds, &PLACES_PREDICATES).await
 }
 
+#[tokio::test]
+async fn test_places_pg_sql() -> Result<(), Box<dyn Error>> {
+    let ds = PlacePG::new().await?;
+    harness_sql(ds, &PLACES_PREDICATES).await
+}
+
 #[test]
-#[traced_test]
 fn test_rivers() -> Result<(), Box<dyn Error>> {
     let ds = RiverCSV::new();
     harness(ds, &RIVERS_PREDICATES)
@@ -88,5 +96,11 @@ async fn test_rivers_gpkg() -> Result<(), Box<dyn Error>> {
 #[tokio::test]
 async fn test_rivers_sql() -> Result<(), Box<dyn Error>> {
     let ds = RiverGPkg::new().await?;
+    harness_sql(ds, &RIVERS_PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_rivers_pg_sql() -> Result<(), Box<dyn Error>> {
+    let ds = RiverPG::new().await?;
     harness_sql(ds, &RIVERS_PREDICATES).await
 }

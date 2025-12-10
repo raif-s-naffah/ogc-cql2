@@ -73,7 +73,7 @@ impl Points {
     }
 
     pub(crate) fn from_xy(points: XY2V) -> Self {
-        Self::from_xy_and_srid(points, SRID::default())
+        Self::from_xy_and_srid(points, *config().default_srid())
     }
 
     pub(crate) fn from_xy_and_srid(points: XY2V, srid: SRID) -> Self {

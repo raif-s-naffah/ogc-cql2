@@ -61,7 +61,7 @@ impl Polygon {
     }
 
     pub(crate) fn from_xy(rings: XY3V) -> Self {
-        Self::from_xy_and_srid(rings, SRID::default())
+        Self::from_xy_and_srid(rings, *config().default_srid())
     }
 
     pub(crate) fn from_xy_and_srid(rings: XY3V, srid: SRID) -> Self {

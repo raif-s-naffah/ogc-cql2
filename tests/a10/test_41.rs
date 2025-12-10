@@ -46,7 +46,7 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{PlaceCSV, PlaceGPkg, harness, harness_gpkg, harness_sql};
+use crate::utils::{PlaceCSV, PlaceGPkg, PlacePG, harness, harness_gpkg, harness_sql};
 use std::error::Error;
 
 #[rustfmt::skip]
@@ -105,6 +105,12 @@ async fn test_timestamps_sql() -> Result<(), Box<dyn Error>> {
     harness_sql(ds, &TIMESTAMP_PREDICATES).await
 }
 
+#[tokio::test]
+async fn test_timestamps_pg_sql() -> Result<(), Box<dyn Error>> {
+    let ds = PlacePG::new().await?;
+    harness_sql(ds, &TIMESTAMP_PREDICATES).await
+}
+
 #[test]
 fn test_dates() -> Result<(), Box<dyn Error>> {
     let ds = PlaceCSV::new();
@@ -120,5 +126,11 @@ async fn test_dates_gpkg() -> Result<(), Box<dyn Error>> {
 #[tokio::test]
 async fn test_dates_sql() -> Result<(), Box<dyn Error>> {
     let ds = PlaceGPkg::new().await?;
+    harness_sql(ds, &DATE_PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_dates_pg_sql() -> Result<(), Box<dyn Error>> {
+    let ds = PlacePG::new().await?;
     harness_sql(ds, &DATE_PREDICATES).await
 }

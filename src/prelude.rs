@@ -21,4 +21,4 @@ pub use super::srid::*;
 pub use super::Expression;
 pub use super::Outcome;
 
-pub use super::{gen_csv_ds, gen_gpkg_ds};
+pub use super::{gen_csv_ds, gen_gpkg_ds, gen_pg_ds};

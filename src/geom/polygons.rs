@@ -77,7 +77,7 @@ impl Polygons {
     }
 
     pub(crate) fn from_xy(polygons: XY4V) -> Self {
-        Self::from_xy_and_srid(polygons, SRID::default())
+        Self::from_xy_and_srid(polygons, *config().default_srid())
     }
 
     pub(crate) fn from_xy_and_srid(polygons: XY4V, srid: SRID) -> Self {

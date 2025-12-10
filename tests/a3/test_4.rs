@@ -21,10 +21,8 @@
 
 use ogc_cql2::{Bound, Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use std::error::Error;
-use tracing_test::traced_test;
 
 #[test]
-#[traced_test]
 fn test_boolean() -> Result<(), Box<dyn Error>> {
     const F: &str = r#"foo < 0.15 AND sat:row=13 AND sat:path=True"#;
 
@@ -44,7 +42,6 @@ fn test_boolean() -> Result<(), Box<dyn Error>> {
         ("sat:path".into(), Q::from(true)),
     ]);
     let res = evaluator.evaluate(&f1)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::T));
 
     // this one should fail...
@@ -55,7 +52,6 @@ fn test_boolean() -> Result<(), Box<dyn Error>> {
         ("sat:path".into(), Q::from(false)),
     ]);
     let res = evaluator.evaluate(&f2)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::F));
 
     // this one should fail w/ a N outcome, since the property-name used in the
@@ -67,14 +63,12 @@ fn test_boolean() -> Result<(), Box<dyn Error>> {
         ("sat:paht".into(), Q::from(true)),
     ]);
     let res = evaluator.evaluate(&f3)?;
-    tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::N));
 
     Ok(())
 }
 
 #[test]
-#[traced_test]
 fn test_num() -> Result<(), Box<dyn Error>> {
     const F: &str = r#"foo:x IN (0.1,0.2)"#;
 
@@ -88,7 +82,6 @@ fn test_num() -> Result<(), Box<dyn Error>> {
         ("foo:x".into(), Q::from(0.1)),
     ]);
     let res = evaluator.evaluate(&f1)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::T));
 
     let f2 = Resource::from([
@@ -96,7 +89,6 @@ fn test_num() -> Result<(), Box<dyn Error>> {
         ("foo:x".into(), Q::from(0.3)),
     ]);
     let res = evaluator.evaluate(&f2)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::F));
 
     let f3 = Resource::from([
@@ -104,14 +96,12 @@ fn test_num() -> Result<(), Box<dyn Error>> {
         ("foo:y".into(), Q::from(0.1)),
     ]);
     let res = evaluator.evaluate(&f3)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::N));
 
     Ok(())
 }
 
 #[test]
-#[traced_test]
 fn test_string() -> Result<(), Box<dyn Error>> {
     const F: &str = r#"foo:id = 'bonza'"#;
 
@@ -125,7 +115,6 @@ fn test_string() -> Result<(), Box<dyn Error>> {
         ("foo:id".into(), Q::new_plain_str("bonza")),
     ]);
     let res = evaluator.evaluate(&f1)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::T));
 
     let f2 = Resource::from([
@@ -133,7 +122,6 @@ fn test_string() -> Result<(), Box<dyn Error>> {
         ("foo:id".into(), Q::new_plain_str("wtf")),
     ]);
     let res = evaluator.evaluate(&f2)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::F));
 
     let f3 = Resource::from([
@@ -141,14 +129,12 @@ fn test_string() -> Result<(), Box<dyn Error>> {
         ("bar:id".into(), Q::new_plain_str("bonza")),
     ]);
     let res = evaluator.evaluate(&f3)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::N));
 
     Ok(())
 }
 
 #[test]
-#[traced_test]
 fn test_instant() -> Result<(), Box<dyn Error>> {
     const F: &str = r#"T_Before(built, date('2025-07-14'))"#;
 
@@ -165,7 +151,6 @@ fn test_instant() -> Result<(), Box<dyn Error>> {
         ("built".into(), Q::from(Bound::try_new_date(D1)?)),
     ]);
     let res = evaluator.evaluate(&f1)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::T));
 
     let f2 = Resource::from([
@@ -173,7 +158,6 @@ fn test_instant() -> Result<(), Box<dyn Error>> {
         ("built".into(), Q::from(Bound::try_new_date(D2)?)),
     ]);
     let res = evaluator.evaluate(&f2)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::F));
 
     let f3 = Resource::from([
@@ -181,14 +165,12 @@ fn test_instant() -> Result<(), Box<dyn Error>> {
         ("build".into(), Q::from(Bound::try_new_date(D1)?)),
     ]);
     let res = evaluator.evaluate(&f3)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::N));
 
     Ok(())
 }
 
 #[test]
-#[traced_test]
 fn test_interval() -> Result<(), Box<dyn Error>> {
     const F: &str =
         r#"T_During(interval(a, b), INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"#;
@@ -208,7 +190,6 @@ fn test_interval() -> Result<(), Box<dyn Error>> {
         ("b".into(), Q::from(Bound::try_new_timestamp(T2)?)),
     ]);
     let res = evaluator.evaluate(&f1)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::T));
 
     let f2 = Resource::from([
@@ -217,7 +198,6 @@ fn test_interval() -> Result<(), Box<dyn Error>> {
         ("b".into(), Q::from(Bound::try_new_timestamp(T2)?)),
     ]);
     let res = evaluator.evaluate(&f2)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::F));
 
     let f3 = Resource::from([
@@ -226,14 +206,12 @@ fn test_interval() -> Result<(), Box<dyn Error>> {
         ("c".into(), Q::from(Bound::try_new_timestamp(T3)?)),
     ]);
     let res = evaluator.evaluate(&f3)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::N));
 
     Ok(())
 }
 
 #[test]
-#[traced_test]
 fn test_point_and_polygon() -> Result<(), Box<dyn Error>> {
     const F: &str = r#"S_WITHIN("geom", POLYGON((-65.887123 2.00001, 0.333333 -53.017711, 180.0 0.0, -65.887123 2.00001), (-49.88024 0.5, -1.5 -0.99999, 0.0 0.5, -49.88024 0.5)))"#;
 
@@ -248,7 +226,6 @@ fn test_point_and_polygon() -> Result<(), Box<dyn Error>> {
         ("geom".into(), Q::try_from_wkt(BALSAS)?),
     ]);
     let res = evaluator.evaluate(&f1)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::T));
 
     const SYDNEY: &str = "POINT(151.22322000 -33.74821000)";
@@ -257,7 +234,6 @@ fn test_point_and_polygon() -> Result<(), Box<dyn Error>> {
         ("geom".into(), Q::try_from_wkt(SYDNEY)?),
     ]);
     let res = evaluator.evaluate(&f2)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::F));
 
     let f3 = Resource::from([
@@ -265,14 +241,12 @@ fn test_point_and_polygon() -> Result<(), Box<dyn Error>> {
         ("geon".into(), Q::try_from_wkt("POINT(1.0 1.0 1.0)")?),
     ]);
     let res = evaluator.evaluate(&f3)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::N));
 
     Ok(())
 }
 
 #[test]
-#[traced_test]
 fn test_line() -> Result<(), Box<dyn Error>> {
     const F: &str = r#"s_crosses(LineString(-65.0 2.0, 0.33 -53.017, 90.0 0.0), "geom")"#;
 
@@ -287,7 +261,6 @@ fn test_line() -> Result<(), Box<dyn Error>> {
         ("geom".into(), Q::try_from_wkt(L1)?),
     ]);
     let res = evaluator.evaluate(&f1)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::T));
 
     const L2: &str = "LINESTRING(0.0 0.0, 10.0 -43.74821)";
@@ -296,7 +269,6 @@ fn test_line() -> Result<(), Box<dyn Error>> {
         ("geom".into(), Q::try_from_wkt(L2)?),
     ]);
     let res = evaluator.evaluate(&f2)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::F));
 
     let f3 = Resource::from([
@@ -304,7 +276,6 @@ fn test_line() -> Result<(), Box<dyn Error>> {
         ("geon".into(), Q::try_from_wkt("POINT(1.0 1.0 1.0)")?),
     ]);
     let res = evaluator.evaluate(&f3)?;
-    // tracing::debug!("res = {res}");
     assert!(matches!(res, Outcome::N));
 
     Ok(())

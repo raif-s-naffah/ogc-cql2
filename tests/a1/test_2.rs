@@ -15,10 +15,8 @@
 
 use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use std::error::Error;
-use tracing_test::traced_test;
 
 #[test]
-#[traced_test]
 fn test() -> Result<(), Box<dyn Error>> {
     const TV: [(&str, &str); 11] = [
         ("\'abcdef\'", "abcdef"),

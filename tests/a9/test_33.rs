@@ -17,10 +17,8 @@
 
 use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use std::error::Error;
-use tracing_test::traced_test;
 
 #[test]
-#[traced_test]
 fn test_bbox() -> Result<(), Box<dyn Error>> {
     const E: &str = "S_TOUCHES(geom,BBOX(-180,-90,180,90))";
     const PASS: [&str; 2] = [
@@ -43,7 +41,6 @@ fn test_bbox() -> Result<(), Box<dyn Error>> {
     ];
 
     let expr = Expression::try_from_text(E)?;
-    // tracing::debug!("expr = {expr:?}");
     let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
     let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
@@ -76,7 +73,6 @@ fn test_bbox() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_polygon() -> Result<(), Box<dyn Error>> {
     const E: &str = "S_TOUCHES(geom,POLYGON((-180 -90,180 -90,180 90,-180 90,-180 -90)))";
     const PASS: [&str; 2] = [
@@ -99,7 +95,6 @@ fn test_polygon() -> Result<(), Box<dyn Error>> {
     ];
 
     let expr = Expression::try_from_text(E)?;
-    // tracing::debug!("expr = {expr:?}");
     let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
     let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
@@ -132,7 +127,6 @@ fn test_polygon() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_line() -> Result<(), Box<dyn Error>> {
     const E: &str = "S_TOUCHES(geom,LINESTRING(7 50,10 51))";
     const PASS: [&str; 7] = [
@@ -155,7 +149,6 @@ fn test_line() -> Result<(), Box<dyn Error>> {
     ];
 
     let expr = Expression::try_from_text(E)?;
-    // tracing::debug!("expr = {expr:?}");
     let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
     let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;

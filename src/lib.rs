@@ -223,31 +223,31 @@
 //! Similar to the CSV data source, the [`gen_gpkg_ds!`] macro does the heavy
 //! lifting generating the necessary artifcats for a _GeoPackage_ data source.
 //!
-//! 
+//!
 //! # Relative performance
-//! 
+//!
 //! With the introduction of the [`DataSource`], [`IterableDS`] and [`StreamableDS`]
 //! traits and the provided _CSV_ and _GeoPackage_ implementations, a User can
 //! effectively process the data in 3 ways:
-//! 
+//!
 //! * as _Features_ using the [`IterableDS`] trait --from a _CSV_ table.
 //! * as either _Features_ or [Resource]s using the [`StreamableDS`] trait through
 //!   the `fetch()` or `stream()` hooks --from a _GeoPackage_ database file,
 //! * as _Features_ or [`Resource`]s using the [`StreamableDS`] trait through the
 //!   `fetch_where()` or `stream_where()` hooks --from a _GeoPackage_ DB.
-//! 
+//!
 //! The last approach is by far the most effective since it delegates to a
 //! DB engine the job of filtering the records, while the 2<sup>nd</sup> one
 //! is the worst b/c it involves converting every _Feature_ to a [`Resource`]
 //! even when we may not need all the queryables from that newly created
 //! [`Resource`].
-//! 
+//!
 //! As an example of relative performance of those approaches, consider the
 //! timing of `test_points`, `test_points_gpkg` and `test_points_sql` in
 //! `a9::test_37` which correspond to those 3 strategies respectively when
 //! processing a data set of 243 records. On my development laptop, w/ the
 //! `profile [unoptimized + debuginfo]` i get...
-//! 
+//!
 //! ```text
 //! +---+--------------------+-------+
 //! | # | test               | time  |
@@ -257,8 +257,8 @@
 //! | 3 | test_points_sql()  | 0.08s |
 //! +---+--------------------+-------+
 //! ```
-//! 
-//! 
+//!
+//!
 //! # Third-party crates
 //!
 //! This project, in addition to the external software mentioned in the [README][readme],

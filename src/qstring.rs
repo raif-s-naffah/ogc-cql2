@@ -400,8 +400,7 @@ mod tests {
                 let input = QString::icase(&s);
                 let result = QString::like(&input, &pattern);
                 if !result {
-                    eprintln!("*** Was expecting '{s}' to succeed");
-                    panic!("Ooops")
+                    panic!("Ooops! Was expecting '{s}' to succeed")
                 }
             };
         }
@@ -416,8 +415,7 @@ mod tests {
                 let input = QString::icase(&s);
                 let result = QString::like(&input, &pattern);
                 if !result {
-                    eprintln!("*** Was expecting '{s}' to succeed");
-                    panic!("Ooops")
+                    panic!("Ooops! Was expecting '{s}' to succeed")
                 }
             };
         }
@@ -438,7 +436,6 @@ mod tests {
     }
 
     #[test]
-    #[tracing_test::traced_test]
     fn test_like_bench() {
         // generate random word, 5 to 10 characters long from latin characters.
         fn random_latin_word() -> String {

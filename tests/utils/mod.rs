@@ -8,9 +8,9 @@ mod country;
 mod place;
 mod river;
 
-pub(crate) use country::{CountryCSV, CountryGPkg, countries, countries_gpkg};
-pub(crate) use place::{PlaceCSV, PlaceGPkg, places};
-pub(crate) use river::{RiverCSV, RiverGPkg};
+pub(crate) use country::{CountryCSV, CountryGPkg, CountryPG, countries, countries_gpkg};
+pub(crate) use place::{PlaceCSV, PlaceGPkg, PlacePG, places};
+pub(crate) use river::{RiverCSV, RiverGPkg, RiverPG};
 
 use futures::TryStreamExt;
 use ogc_cql2::{
@@ -27,6 +27,7 @@ use rand::{
 use std::error::Error;
 
 const GPKG_URL: &str = "sqlite:tests/samples/data/ne110m4cql2.gpkg";
+const PG_DB_NAME: &str = "cql2";
 
 // Process the records of a named CSV data source, evaluating for each a
 // collection of predicates and collecting for each one of those the tally of
@@ -34,7 +35,7 @@ const GPKG_URL: &str = "sqlite:tests/samples/data/ne110m4cql2.gpkg";
 //
 // The test passes if the actual count of correct responses matches a given
 // expected value and fails otherwise.
-pub(crate) fn harness<T: IterableDS<Err = MyError> + std::fmt::Display>(
+pub(crate) fn harness<T: IterableDS<Err = MyError>>(
     ds: T,
     predicates: &[(&str, u32)],
 ) -> Result<(), Box<dyn Error>>
@@ -69,9 +70,8 @@ where
         for (p_ndx, evaluator) in evaluators.iter().enumerate() {
             let res = evaluator
                 .evaluate(&resource)
-                .expect(&format!("Failed evaluating resource @{ds}"));
+                .expect(&format!("Failed evaluating resource"));
             if matches!(res, Outcome::T) {
-                // tracing::debug!("-- match: {resource:?}");
                 actual[p_ndx] += 1;
             }
         }
@@ -80,7 +80,6 @@ where
     let mut failures = 0;
     for (ndx, count) in actual.iter().enumerate() {
         let n = expected[ndx];
-        // tracing::debug!("Predicate #{ndx} - actual/expected: {count} / {n}");
         if count != n {
             tracing::error!("Failed predicate #{ndx} - actual/expected: {count} / {n}");
             failures += 1;
@@ -92,8 +91,7 @@ where
 }
 
 // similar to the iterable version but uses async streaming...
-// remember though that this is painfully slow due to the conversions :(
-pub(crate) async fn harness_gpkg<T: StreamableDS<Err = MyError> + std::fmt::Display>(
+pub(crate) async fn harness_gpkg<T: StreamableDS<Err = MyError>>(
     ds: T,
     predicates: &[(&str, u32)],
 ) -> Result<(), Box<dyn Error>> {
@@ -116,7 +114,7 @@ pub(crate) async fn harness_gpkg<T: StreamableDS<Err = MyError> + std::fmt::Disp
         for (p_ndx, evaluator) in evaluators.iter().enumerate() {
             let res = evaluator
                 .evaluate(&resource)
-                .expect(&format!("Failed evaluating resource @{ds}"));
+                .expect(&format!("Failed evaluating resource"));
             if matches!(res, Outcome::T) {
                 actual[p_ndx] += 1;
             }
@@ -139,15 +137,15 @@ pub(crate) async fn harness_gpkg<T: StreamableDS<Err = MyError> + std::fmt::Disp
 // the real McKoy! for GeoPackage (and future PostGIS) data sources.  delegates
 // the filtering to the DB engine through a SELECT w/ a WHERE clause built from
 // the CQL2 expression...
-pub(crate) async fn harness_sql<T: StreamableDS<Err = MyError> + std::fmt::Display>(
-    gpkg: T,
+pub(crate) async fn harness_sql<T: StreamableDS<Err = MyError>>(
+    ds: T,
     predicates: &[(&str, u32)],
 ) -> Result<(), Box<dyn Error>> {
-    // use the 'stream_where()' entry point -> TXxx...
+    // use the 'stream_where()' entry point
     for (ndx, (filter, expected)) in predicates.iter().enumerate() {
         let exp = Expression::try_from_text(&filter)?;
         let mut actual = 0;
-        let mut stream = gpkg.fetch_where(&exp).await?;
+        let mut stream = ds.fetch_where(&exp).await?;
         while let Some(_) = stream.try_next().await? {
             actual += 1;
         }

@@ -20,7 +20,6 @@ use crate::utils::random_ascii_word;
 use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use rand::{Rng, rng};
 use std::error::Error;
-use tracing_test::traced_test;
 
 const PREFIX: &str = "Foo";
 
@@ -35,7 +34,6 @@ fn starts_with_prefix() -> String {
 }
 
 #[test]
-#[traced_test]
 fn test() -> Result<(), Box<dyn Error>> {
     const E1: &str = r#"CASEI(z_string) LIKE casei('foo%')"#;
     const E2: &str = r#"CASEI(z_string) LIKE casei('FOO%')"#;
@@ -50,7 +48,6 @@ fn test() -> Result<(), Box<dyn Error>> {
 
     for n in 1..=1_000 {
         let s = starts_with_prefix();
-        // let hit = s.starts_with(PREFIX);
         let hit = s[0..3].to_lowercase().eq("foo");
 
         let feat = Resource::from([

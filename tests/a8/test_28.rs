@@ -37,10 +37,8 @@
 
 use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, MyError, Outcome, Q, Resource};
 use std::error::Error;
-use tracing_test::traced_test;
 
 #[test]
-#[traced_test]
 #[ignore = "we now allow MULTIPOINT coordinate pairs to be w/o parens"]
 fn test_e1_invalid_wkt() {
     // malformed MULTIPOINT WKT according to BNF...
@@ -52,7 +50,6 @@ fn test_e1_invalid_wkt() {
 
 // the first filter expression that is supposed to fail b/c
 #[test]
-#[traced_test]
 fn test_e1_invalid_coordinates() -> Result<(), Box<dyn Error>> {
     // wellformed MULTIPOINT WKT but using out-of-bounds WGS'84 coordinates.
     const E: &str = r#"S_INTERSECTS(geom,MULTIPOINT((7.02 49.92), (90 180)))"#;
@@ -75,7 +72,6 @@ fn test_e1_invalid_coordinates() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_e2() -> Result<(), Box<dyn Error>> {
     const E: &str = r#"S_INTERSECTS(geom,LINESTRING(-180 -45, 0 -45))"#;
     const PASS: [&str; 7] = [
@@ -136,7 +132,6 @@ fn test_e2() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_e3() -> Result<(), Box<dyn Error>> {
     const E: &str = r#"S_INTERSECTS(geom,MULTILINESTRING((-180 -45, 0 -45), (0 45, 180 45)))"#;
     const PASS: [&str; 7] = [
@@ -196,7 +191,6 @@ fn test_e3() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_e4() -> Result<(), Box<dyn Error>> {
     const E: &str = r#"S_INTERSECTS(geom,POLYGON((-180 -90, -90 -90, -90 90, -180 90, -180 -90), (-120 -50, -100 -50, -100 -40, -120 -40, -120 -50)))"#;
     const PASS: [&str; 6] = [
@@ -255,7 +249,6 @@ fn test_e4() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_e5() -> Result<(), Box<dyn Error>> {
     const E: &str = r#"S_INTERSECTS(geom,MULTIPOLYGON(
         ((-180 -90, -90 -90, -90 90, -180 90, -180 -90), 
@@ -289,7 +282,6 @@ fn test_e5() -> Result<(), Box<dyn Error>> {
             ("fid".into(), Q::try_from(n)?),
             ("geom".into(), Q::try_from_wkt(&wkt)?),
         ]);
-        // tracing::debug!("feat = {feat:?}");
         let res = evaluator.evaluate(&feat)?;
         match res {
             Outcome::T => (),
@@ -319,7 +311,6 @@ fn test_e5() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_e6() -> Result<(), Box<dyn Error>> {
     const E: &str = r#"S_INTERSECTS(geom,GEOMETRYCOLLECTION(
         POINT(7.02 49.92),

@@ -20,12 +20,10 @@
 use crate::utils::random_unicode_word;
 use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use std::error::Error;
-use tracing_test::traced_test;
 use unicase::UniCase;
 use unicode_normalization::{UnicodeNormalization, char::is_combining_mark};
 
 #[test]
-#[traced_test]
 fn test() -> Result<(), Box<dyn Error>> {
     const E1: &str = r#"ACCENTI(CASEI(z_string)) LIKE accenti(casei('Ä%'))"#;
     const E2: &str = r#"ACCENTI(CASEI(z_string)) LIKE accenti(casei('a%'))"#;

@@ -171,8 +171,8 @@ impl Op {
             Op::Exp    => "^",
 
             Op::Neg => "NOT",
-            Op::Eq  => "==",
-            Op::Neq => "!=",
+            Op::Eq  => "=",
+            Op::Neq => "<>",
             Op::Lt  => "<",
             Op::Gt  => ">",
             Op::Lte => "<=",
@@ -188,6 +188,13 @@ impl Op {
             Op::SOverlaps   => "ST_Overlaps",
             Op::SCrosses    => "ST_Crosses",
             Op::SContains   => "ST_Contains",
+
+            // NOTE (rsn) 20251202 - SQLite, unlike PostgreSQL, doesn't support
+            // Array operators.
+            Op::AEquals      => "=",
+            Op::AContains    => "@>",
+            Op::AContainedBy => "<@",
+            Op::AOverlaps    => "&&",
 
             Op::IsLike    => "LIKE",
             Op::IsNotLike => "NOT LIKE",

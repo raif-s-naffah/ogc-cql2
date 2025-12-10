@@ -20,7 +20,6 @@ use crate::utils::random_unicode_word;
 use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, QString, Resource};
 use rand::{Rng, rng};
 use std::error::Error;
-use tracing_test::traced_test;
 
 const PREFIX: &str = "Ä";
 
@@ -34,7 +33,6 @@ fn starts_with_prefix() -> String {
 }
 
 #[test]
-#[traced_test]
 fn test() -> Result<(), Box<dyn Error>> {
     const E1: &str = r#"ACCENTI(z_string) LIKE accenti('Ä%')"#;
     const E2: &str = r#"ACCENTI(z_string) LIKE accenti('A%')"#;

@@ -16,7 +16,6 @@
 use crate::grammar;
 use std::error::Error;
 
-/// Validate that CQL2 JSON is supported by the server.
 #[test]
 fn test() -> Result<(), Box<dyn Error>> {
     grammar::test_json_samples()

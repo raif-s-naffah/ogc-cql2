@@ -19,10 +19,8 @@
 use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use rand::Rng;
 use std::error::Error;
-use tracing_test::traced_test;
 
 #[test]
-#[traced_test]
 fn test() -> Result<(), Box<dyn Error>> {
     let mut rng = rand::rng();
     const E1: &str = r#"this is NOT null"#;
@@ -69,9 +67,6 @@ fn test() -> Result<(), Box<dyn Error>> {
             _ => actual_false2 += 1,
         }
     }
-
-    tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
-    tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
 
     assert_eq!(actual_true1, expect_true1);
     assert_eq!(actual_false1, expect_false1);

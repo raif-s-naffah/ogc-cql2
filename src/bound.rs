@@ -114,6 +114,16 @@ impl Bound {
         Ok(Bound::Timestamp(z))
     }
 
+    /// Return the inner value in `Some` if this is not the unbound variant.
+    /// Return `None` otherwise.
+    pub fn as_zoned(&self) -> Option<Zoned> {
+        match self {
+            Bound::Date(x) => Some(x.to_owned()),
+            Bound::Timestamp(x) => Some(x.to_owned()),
+            Bound::None => None,
+        }
+    }
+
     /// Return inner value if it was a bounded instant.
     pub(crate) fn to_zoned(&self) -> Result<Zoned, MyError> {
         match self {
@@ -122,16 +132,6 @@ impl Bound {
             _ => Err(MyError::Runtime(
                 format!("{self} is not a bounded instant").into(),
             )),
-        }
-    }
-
-    // Return the inner value in `Some` if this is not the unbound variant.
-    // Return `None` otherwise.
-    pub(crate) fn as_zoned(&self) -> Option<Zoned> {
-        match self {
-            Bound::Date(x) => Some(x.to_owned()),
-            Bound::Timestamp(x) => Some(x.to_owned()),
-            Bound::None => None,
         }
     }
 

@@ -36,8 +36,6 @@ const RESET: &str = "\x1b[0m";
 #[doc(hidden)]
 const MULTILINE: &str = "~~";
 
-#[doc(hidden)]
-#[macro_export]
 macro_rules! error {
     ( $( $arg: tt )* ) => {
         {
@@ -47,8 +45,6 @@ macro_rules! error {
     }
 }
 
-#[doc(hidden)]
-#[macro_export]
 macro_rules! info {
     ( $( $arg: tt )* ) => {
         {
@@ -58,8 +54,6 @@ macro_rules! info {
     }
 }
 
-#[doc(hidden)]
-#[macro_export]
 macro_rules! note {
     ( $( $arg: tt )* ) => {
         {

@@ -12,7 +12,6 @@
 use crate::grammar;
 use std::error::Error;
 
-/// Validate that CQL2 Text is supported by the server.
 #[test]
 fn test() -> Result<(), Box<dyn Error>> {
     grammar::test_text_samples()

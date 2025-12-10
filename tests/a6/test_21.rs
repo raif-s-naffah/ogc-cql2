@@ -20,7 +20,6 @@ use crate::utils::random_unicode_word;
 use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use rand::{Rng, rng};
 use std::error::Error;
-use tracing_test::traced_test;
 
 const WORD: &str = "Äé";
 
@@ -34,7 +33,6 @@ fn random_word() -> String {
 }
 
 #[test]
-#[traced_test]
 fn test() -> Result<(), Box<dyn Error>> {
     const E1: &str = r#"ACCENTI(CASEI(z_string)) = accenti(casei('ÄÉ'))"#;
     const E2: &str = r#"ACCENTI(CASEI(z_string)) = accenti(casei('ae'))"#;
@@ -78,10 +76,6 @@ fn test() -> Result<(), Box<dyn Error>> {
             Outcome::N => actual_null2 += 1,
         }
     }
-
-    // tracing::debug!("    expect(T/F) = {expect_true}, {expect_false}");
-    // tracing::debug!("actual #1 (T/F) = {actual_true1}, {actual_false1}");
-    // tracing::debug!("actual #2 (T/F) = {actual_true2}, {actual_false2}");
 
     assert_eq!(actual_true1, expect_true);
     assert_eq!(actual_false1, expect_false);

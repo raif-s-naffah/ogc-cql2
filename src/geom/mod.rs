@@ -47,8 +47,12 @@ fn ensure_precision(x: &f64) -> f64 {
 }
 
 /// Geometry type variants handled by this library.
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Default, PartialEq, PartialOrd)]
 pub enum G {
+    /// Undefined geometry.
+    #[default]
+    Null,
+
     /// Point geometry.
     Point(Point),
     /// Line geometry.
@@ -124,6 +128,7 @@ impl GTrait for G {
             G::Polygons(x) => x.is_2d(),
             G::Vec(x) => x.is_2d(),
             G::BBox(x) => x.is_2d(),
+            _ => unreachable!("N/A for this geometry type"),
         }
     }
 
@@ -137,6 +142,7 @@ impl GTrait for G {
             G::Polygons(x) => x.to_wkt_fmt(precision),
             G::Vec(x) => x.to_wkt_fmt(precision),
             G::BBox(x) => x.to_wkt_fmt(precision),
+            _ => unreachable!("N/A for this geometry type"),
         }
     }
 
@@ -150,6 +156,7 @@ impl GTrait for G {
             G::Polygons(x) => x.check_coordinates(crs),
             G::Vec(x) => x.check_coordinates(crs),
             G::BBox(x) => x.check_coordinates(crs),
+            _ => unreachable!("N/A for this geometry type"),
         }
     }
 
@@ -163,6 +170,7 @@ impl GTrait for G {
             G::Polygons(x) => x.type_(),
             G::Vec(x) => x.type_(),
             G::BBox(x) => x.type_(),
+            _ => unreachable!("N/A for this geometry type"),
         }
     }
 
@@ -176,6 +184,7 @@ impl GTrait for G {
             G::Polygons(x) => x.srid(),
             G::Vec(x) => x.srid(),
             G::BBox(x) => x.srid(),
+            _ => unreachable!("N/A for this geometry type"),
         }
     }
 }
@@ -241,6 +250,7 @@ impl G {
             G::Polygons(x) => x.to_geos(),
             G::Vec(x) => x.to_geos(),
             G::BBox(x) => x.to_geos(),
+            _ => unreachable!("N/A for this geometry type"),
         }
     }
 
@@ -390,6 +400,7 @@ impl G {
             G::Polygons(x) => x.set_srid_unchecked(srid),
             G::Vec(x) => x.set_srid_unchecked(srid),
             G::BBox(x) => x.set_srid_unchecked(srid),
+            _ => unreachable!("N/A for this geometry type"),
         }
     }
 }
@@ -397,6 +408,7 @@ impl G {
 impl fmt::Display for G {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            G::Null => write!(f, ""),
             G::Point(x) => write!(f, "{x}"),
             G::Line(x) => write!(f, "{x}"),
             G::Polygon(x) => write!(f, "{x}"),
@@ -417,7 +429,7 @@ impl TryFrom<&str> for G {
         let mut g = wkt(value).map_err(MyError::Text)?;
         // NOTE (rsn) 20251023 - WKT does not encode SRIDs.  assign configured
         // global default set in .env...
-        g.set_srid_unchecked(&SRID::default());
+        g.set_srid_unchecked(config().default_srid());
 
         Ok(g)
     }
@@ -428,7 +440,7 @@ impl TryFrom<&[u8]> for G {
     type Error = MyError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        let wkb = StandardGeoPackageBinary::try_from(value)?;
+        let wkb = GeoPackageBinary::try_from(value)?;
         Ok(wkb.geom())
     }
 }

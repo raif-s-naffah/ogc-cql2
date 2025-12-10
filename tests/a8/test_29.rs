@@ -11,9 +11,8 @@
 //! * assert that the expected result is returned.
 //!
 
-use crate::utils::{CountryCSV, CountryGPkg, harness, harness_gpkg, harness_sql};
+use crate::utils::{CountryCSV, CountryGPkg, CountryPG, harness, harness_gpkg, harness_sql};
 use std::error::Error;
-use tracing_test::traced_test;
 
 const PREDICATES: [(&str, u32); 7] = [
     ("S_INTERSECTS(geom,LINESTRING(-180 -45, 0 -45))", 2),
@@ -57,7 +56,6 @@ const PREDICATES: [(&str, u32); 7] = [
 ];
 
 #[test]
-#[traced_test]
 fn test() -> Result<(), Box<dyn Error>> {
     let ds = CountryCSV::new();
     harness(ds, &PREDICATES)
@@ -72,5 +70,11 @@ async fn test_gpkg() -> Result<(), Box<dyn Error>> {
 #[tokio::test]
 async fn test_sql() -> Result<(), Box<dyn Error>> {
     let ds = CountryGPkg::new().await?;
+    harness_sql(ds, &PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_pg_sql() -> Result<(), Box<dyn Error>> {
+    let ds = CountryPG::new().await?;
     harness_sql(ds, &PREDICATES).await
 }

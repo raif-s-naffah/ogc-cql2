@@ -18,7 +18,7 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{CountryCSV, CountryGPkg, harness, harness_gpkg, harness_sql};
+use crate::utils::{CountryCSV, CountryGPkg, CountryPG, harness, harness_gpkg, harness_sql};
 use std::error::Error;
 
 // Countries data set contains 177 records...
@@ -45,5 +45,11 @@ async fn test_gpkg() -> Result<(), Box<dyn Error>> {
 #[tokio::test]
 async fn test_sql() -> Result<(), Box<dyn Error>> {
     let ds = CountryGPkg::new().await?;
+    harness_sql(ds, &PREDICATES).await
+}
+
+#[tokio::test]
+async fn test_pg_sql() -> Result<(), Box<dyn Error>> {
+    let ds = CountryPG::new().await?;
     harness_sql(ds, &PREDICATES).await
 }

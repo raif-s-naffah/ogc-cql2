@@ -26,11 +26,11 @@
 //!
 
 use crate::utils::{
-    CountryCSV, CountryGPkg, countries, countries_gpkg, harness, harness_gpkg, harness_sql,
+    CountryCSV, CountryGPkg, CountryPG, countries, countries_gpkg, harness, harness_gpkg,
+    harness_sql,
 };
 use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, MyError, Outcome, Q, Resource};
 use std::error::Error;
-use tracing_test::traced_test;
 
 // Countries data set contains 177 records...
 #[rustfmt::skip]
@@ -49,7 +49,6 @@ const DISJOINT: [(&str, u32); 4] = [
 // ];
 
 #[test]
-#[traced_test]
 fn test_invalid_coordinates() -> Result<(), Box<dyn Error>> {
     const E: &str = r#"S_DISJOINT(geom,POINT(90 180))"#;
 
@@ -70,7 +69,6 @@ fn test_invalid_coordinates() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test() -> Result<(), Box<dyn Error>> {
     let ds = CountryCSV::new();
     harness(ds, &DISJOINT)
@@ -88,8 +86,13 @@ async fn test_sql() -> Result<(), Box<dyn Error>> {
     harness_sql(ds, &DISJOINT).await
 }
 
+#[tokio::test]
+async fn test_pg_sql() -> Result<(), Box<dyn Error>> {
+    let ds = CountryPG::new().await?;
+    harness_sql(ds, &DISJOINT).await
+}
+
 #[test]
-#[traced_test]
 fn test_e3_intersect() -> Result<(), Box<dyn Error>> {
     const E1: &str = "S_DISJOINT(geom,LINESTRING(7 50, 10 51))";
     const E2: &str = "S_INTERSECTS(geom,LINESTRING(7 50, 10 51))";
@@ -142,7 +145,6 @@ async fn test_e3_intersect_gpkg() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_e4_intersect() -> Result<(), Box<dyn Error>> {
     const E1: &str = "S_DISJOINT(geom,POINT(7.02 49.92))";
     const E2: &str = "S_INTERSECTS(geom,POINT(7.02 49.92))";

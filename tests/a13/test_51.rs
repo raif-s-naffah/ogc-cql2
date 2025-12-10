@@ -32,7 +32,6 @@ fn test() -> Result<(), Box<dyn Error>> {
     ]);
 
     let res = eval.evaluate(&feat)?;
-    // tracing::debug!("res = {res:?}");
     assert!(matches!(res, Outcome::T));
 
     Ok(())

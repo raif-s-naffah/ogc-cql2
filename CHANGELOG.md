@@ -1,5 +1,16 @@
-# UNPUBLISHED (2025-11-22)
+# Version 0.4.0  (2025-12-10)
 
+* Fixed bug when generating a MULTIPOLYGON from a BBOX.
+* Fixed bug affecting GeoPackage SRID detection.
+* Added Criterion benchmarks.
+* Modified GeoPackage implementation to minimize differences of
+  generated SQL statements w/ that of PostGIS.
+* Added environment variables to configure PostgreSQL database URL + connection
+  parameters.
+* Implemented StreamableDS for PostGIS tables.
+* Upgrade `tracing` to 0.1.43.
+* Upgrade `serde_with` to 3.16.1.
+* Use SQL syntax common to both SQLite and PostgreSQL when possible.
 * Hid internal macros, edited documentation + fixed spelling mistakes.
 
 # Version 0.3.0 (2025-11-20)

@@ -28,7 +28,6 @@ use ogc_cql2::{
 };
 use std::error::Error;
 use tracing::error;
-use tracing_test::traced_test;
 
 const LP1: &str = "NAME LIKE '%'";
 const LP2: &str = "NAME like '_%'";
@@ -38,13 +37,11 @@ const LP5: &str = "NAME like '\\%\\_'";
 
 // w/ LP1, any non-null input will match...
 #[test]
-#[traced_test]
 fn test_outcome_1() -> Result<(), Box<dyn Error>> {
     let shared_ctx = Context::new().freeze();
     let mut evaluator = ExEvaluator::new(shared_ctx.clone());
     let input = format!("{LP1}");
     let exp = Expression::try_from_text(&input)?;
-    // tracing::debug!("exp = {exp:?}");
 
     evaluator.setup(exp)?;
 
@@ -77,7 +74,6 @@ async fn test_outcome_1_gpkg() -> Result<(), Box<dyn Error>> {
 
 // w/ LP2 empty strings will NOT match, while w/ LP3, only they will...
 #[test]
-#[traced_test]
 fn test_outcome_2() -> Result<(), Box<dyn Error>> {
     let shared_ctx = Context::new().freeze();
     let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
@@ -85,10 +81,8 @@ fn test_outcome_2() -> Result<(), Box<dyn Error>> {
 
     let input1 = format!("{LP2}");
     let exp1 = Expression::try_from_text(&input1)?;
-    // tracing::debug!("exp1 = {exp1:?}");
     let input2 = format!("{LP3}");
     let exp2 = Expression::try_from_text(&input2)?;
-    // tracing::debug!("exp2 = {exp2:?}");
 
     evaluator1.setup(exp1)?;
     evaluator2.setup(exp2)?;
@@ -122,10 +116,8 @@ async fn test_outcome_2_gpkg() -> Result<(), Box<dyn Error>> {
 
     let input1 = format!("{LP2}");
     let exp1 = Expression::try_from_text(&input1)?;
-    // tracing::debug!("exp1 = {exp1:?}");
     let input2 = format!("{LP3}");
     let exp2 = Expression::try_from_text(&input2)?;
-    // tracing::debug!("exp2 = {exp2:?}");
 
     evaluator1.setup(exp1)?;
     evaluator2.setup(exp2)?;
@@ -152,7 +144,6 @@ async fn test_outcome_2_gpkg() -> Result<(), Box<dyn Error>> {
 
 // LP1 and LP4 yield the same results...
 #[test]
-#[traced_test]
 fn test_outcome_3() -> Result<(), Box<dyn Error>> {
     let shared_ctx = Context::new().freeze();
     let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
@@ -160,10 +151,8 @@ fn test_outcome_3() -> Result<(), Box<dyn Error>> {
 
     let input1 = format!("{LP1}");
     let exp1 = Expression::try_from_text(&input1)?;
-    // tracing::debug!("exp1 = {exp1:?}");
     let input2 = format!("{LP4}");
     let exp2 = Expression::try_from_text(&input2)?;
-    // tracing::debug!("exp2 = {exp2:?}");
 
     evaluator1.setup(exp1)?;
     evaluator2.setup(exp2)?;
@@ -203,7 +192,6 @@ async fn test_outcome_3_gpkg() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_outcome_4() -> Result<(), Box<dyn Error>> {
     const TV: [(&str, bool); 5] = [
         (r#"abc\%def"#, false),
@@ -217,7 +205,6 @@ fn test_outcome_4() -> Result<(), Box<dyn Error>> {
     let mut evaluator = ExEvaluator::new(shared_ctx.clone());
     let input = format!("{LP5}");
     let exp = Expression::try_from_text(&input)?;
-    // tracing::debug!("exp = {exp:?}");
 
     evaluator.setup(exp)?;
 
@@ -230,7 +217,6 @@ fn test_outcome_4() -> Result<(), Box<dyn Error>> {
         ]);
 
         let actual = evaluator.evaluate(&feat)?;
-        // tracing::debug!("actual = {actual:?}");
         if actual != expected {
             error!("Failed #{ndx}, name = \"{name}\"");
             failures += 1

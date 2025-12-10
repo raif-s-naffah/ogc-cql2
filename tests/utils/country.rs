@@ -5,13 +5,13 @@
 //! can be used by the library.
 //!
 
-use crate::utils::GPKG_URL;
+use crate::utils::{GPKG_URL, PG_DB_NAME};
 use core::fmt;
 use futures::{StreamExt, TryStreamExt};
-use ogc_cql2::prelude::*;
+use ogc_cql2::{gen_pg_ds, prelude::*};
 use serde::Deserialize;
-use sqlx::{AssertSqlSafe, FromRow};
-use std::{collections::HashMap, error::Error, fs::File};
+use sqlx::FromRow;
+use std::{collections::HashMap, error::Error};
 
 const COUNTRIES_CSV: &str = "./tests/samples/data/ne_110m_admin_0_countries.csv";
 const COUNTRIES_TBL: &str = "ne_110m_admin_0_countries";
@@ -127,6 +127,32 @@ pub(crate) async fn countries_gpkg() -> Result<Vec<Resource>, MyError> {
     Ok(result)
 }
 
+// ============================================================================
+
+#[rustfmt::skip]
+#[derive(Debug, FromRow)]
+pub(crate) struct LCountry {
+    fid: i32,
+    #[sqlx(rename = "NAME")] name: String,
+    #[sqlx(rename = "POP_EST")] pop_est: f64,
+    geom: G,
+}
+
+impl TryFrom<LCountry> for Resource {
+    type Error = MyError;
+
+    fn try_from(value: LCountry) -> Result<Self, Self::Error> {
+        Ok(HashMap::from([
+            ("fid".into(), Q::try_from(value.fid)?),
+            ("NAME".into(), Q::new_plain_str(&value.name)),
+            ("POP_EST".into(), Q::from(value.pop_est)),
+            ("geom".into(), Q::Geom(value.geom)),
+        ]))
+    }
+}
+
+gen_pg_ds!(pub(crate), "Country", PG_DB_NAME, COUNTRIES_TBL, LCountry);
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -212,6 +238,24 @@ mod tests {
         let gpkg = CountryGPkg::new().await?;
         // use the 'stream()' entry point -> Resource...
         let mut stream = gpkg.stream().await?;
+        while let Some(c) = stream.try_next().await? {
+            count += 1;
+            let queryable = c.get("geom").expect("Missing 'geom'");
+            let g = queryable.to_geom()?;
+            // all geometries are valid mulyi-polygons...
+            assert_eq!(g.type_(), "MultiPolygon");
+        }
+
+        // layer contains 177 features...
+        assert_eq!(count, 177);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_pg() -> Result<(), Box<dyn Error>> {
+        let mut count = 0;
+        let ds = CountryPG::new().await?;
+        let mut stream = ds.stream().await?;
         while let Some(c) = stream.try_next().await? {
             count += 1;
             let queryable = c.get("geom").expect("Missing 'geom'");

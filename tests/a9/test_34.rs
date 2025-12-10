@@ -17,10 +17,8 @@
 
 use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use std::error::Error;
-use tracing_test::traced_test;
 
 #[test]
-#[traced_test]
 fn test_bbox() -> Result<(), Box<dyn Error>> {
     const E: &str = "S_CROSSES(geom,BBOX(-180,-90,180,90))";
     // no geometry crosses the WGS'84 bounding box...
@@ -39,7 +37,6 @@ fn test_bbox() -> Result<(), Box<dyn Error>> {
     ];
 
     let expr = Expression::try_from_text(E)?;
-    // tracing::debug!("expr = {expr:?}");
     let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
     let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
@@ -60,7 +57,6 @@ fn test_bbox() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_polygon() -> Result<(), Box<dyn Error>> {
     const E: &str = "S_CROSSES(geom,POLYGON((-180 -90,180 -90,180 90,-180 90,-180 -90)))";
     // no geometry crosses the WGS'84 extent...
@@ -79,7 +75,6 @@ fn test_polygon() -> Result<(), Box<dyn Error>> {
     ];
 
     let expr = Expression::try_from_text(E)?;
-    // tracing::debug!("expr = {expr:?}");
     let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
     let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;
@@ -100,7 +95,6 @@ fn test_polygon() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_line() -> Result<(), Box<dyn Error>> {
     const E: &str = "S_CROSSES(geom,LINESTRING(7 50,10 51))";
     const PASS: [&str; 6] = [
@@ -122,7 +116,6 @@ fn test_line() -> Result<(), Box<dyn Error>> {
     ];
 
     let expr = Expression::try_from_text(E)?;
-    // tracing::debug!("expr = {expr:?}");
     let shared_ctx = Context::try_with_crs("EPSG:4326")?.freeze();
     let mut evaluator = ExEvaluator::new(shared_ctx);
     evaluator.setup(expr)?;

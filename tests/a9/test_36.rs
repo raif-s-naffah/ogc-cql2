@@ -21,11 +21,11 @@
 //!
 
 use crate::utils::{
-    CountryCSV, CountryGPkg, countries, countries_gpkg, harness, harness_gpkg, harness_sql,
+    CountryCSV, CountryGPkg, CountryPG, countries, countries_gpkg, harness, harness_gpkg,
+    harness_sql,
 };
 use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome};
 use std::error::Error;
-use tracing_test::traced_test;
 
 // Countries data set contains 177 records...
 #[rustfmt::skip]
@@ -43,7 +43,6 @@ const WITHIN: [(&str, u32); 2] = [
 ];
 
 #[test]
-#[traced_test]
 fn test_contains() -> Result<(), Box<dyn Error>> {
     let ds = CountryCSV::new();
     harness(ds, &CONTAINS)
@@ -61,8 +60,13 @@ async fn test_contains_sql() -> Result<(), Box<dyn Error>> {
     harness_sql(ds, &CONTAINS).await
 }
 
+#[tokio::test]
+async fn test_contains_pg_sql() -> Result<(), Box<dyn Error>> {
+    let ds = CountryPG::new().await?;
+    harness_sql(ds, &CONTAINS).await
+}
+
 #[test]
-#[traced_test]
 fn test_within() -> Result<(), Box<dyn Error>> {
     let ds = CountryCSV::new();
     harness(ds, &WITHIN)
@@ -80,8 +84,13 @@ async fn test_within_sql() -> Result<(), Box<dyn Error>> {
     harness_sql(ds, &WITHIN).await
 }
 
+#[tokio::test]
+async fn test_within_pg_sql() -> Result<(), Box<dyn Error>> {
+    let ds = CountryPG::new().await?;
+    harness_sql(ds, &WITHIN).await
+}
+
 #[test]
-#[traced_test]
 fn test_e3() -> Result<(), Box<dyn Error>> {
     const E1: &str = "S_CONTAINS(geom,LINESTRING(7 50,10 51))";
     const E2: &str = "S_WITHIN(geom,LINESTRING(7 50,10 51))";
@@ -138,7 +147,6 @@ async fn test_e3_gpkg() -> Result<(), Box<dyn Error>> {
 }
 
 #[test]
-#[traced_test]
 fn test_e4() -> Result<(), Box<dyn Error>> {
     const E1: &str = "S_CONTAINS(geom,MULTIPOINT((7 50),(10 51)))";
     const E2: &str = "S_WITHIN(geom,MULTIPOINT((7 50),(10 51)))";

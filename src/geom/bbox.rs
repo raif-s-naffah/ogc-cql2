@@ -218,7 +218,7 @@ impl BBox {
                         vec![x2, y2],
                         vec![-180.0, y2],
                         vec![-180.0, y1],
-                        vec![x1, y1],
+                        vec![x2, y1],
                     ]],
                 ],
                 self.srid,

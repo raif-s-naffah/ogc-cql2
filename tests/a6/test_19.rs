@@ -80,9 +80,6 @@ fn test() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    // tracing::debug!("#1 expect(T/F) = {expect_true1}, {expect_false1}");
-    // tracing::debug!("#2 expect(T/F) = {expect_true2}, {expect_false2}");
-
     assert_eq!(actual_true1, expect_true1);
     assert_eq!(actual_false1, expect_false1);
     assert_eq!(actual_null1, 0);
