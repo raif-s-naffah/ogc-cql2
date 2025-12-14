@@ -1,3 +1,8 @@
+# UNPUBLISHED  (2025-12-14)
+
+* Fixed README spelling mistakes.
+* Use latest secondary dependent crates.
+
 # Version 0.4.0  (2025-12-10)
 
 * Fixed bug when generating a MULTIPOLYGON from a BBOX.

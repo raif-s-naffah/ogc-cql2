@@ -65,7 +65,7 @@ Finally, the `ne_110m_populated_places_simple` table's `start` and `end` columns
 
 ### Tests not implemented yet
 
-Some tests, which teexercisest filter expressions with AND, OR, and NOT including sub-expressions of 4 predicates are not implemented yet. Those are:
+Some tests, which exercise filter expressions with AND, OR, and NOT including sub-expressions of 4 predicates are not implemented yet. Those are:
 
 * A.6.6. Conformance Test 24: `/conf/accent-insensitive-comparison/logical`,
 * A.7.3. Conformance Test 27: `/conf/basic-spatial-functions/logical`,
