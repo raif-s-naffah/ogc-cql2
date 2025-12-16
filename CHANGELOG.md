@@ -1,9 +1,11 @@
-# UNPUBLISHED  (2025-12-14)
+# UNPUBLISHED (2025-12-14)
 
+* Clarify context (GeoPackage or PostGIS) WKB mentions refer to.
+* Fully qualify referenced crates in macros.
 * Fixed README spelling mistakes.
 * Use latest secondary dependent crates.
 
-# Version 0.4.0  (2025-12-10)
+# Version 0.4.0 (2025-12-10)
 
 * Fixed bug when generating a MULTIPOLYGON from a BBOX.
 * Fixed bug affecting GeoPackage SRID detection.

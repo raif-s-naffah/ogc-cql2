@@ -39,7 +39,7 @@ impl CSVDataSource {
 #[macro_export]
 macro_rules! gen_csv_ds {
     ($vis:vis, $name:expr, $path:expr, $feature:expr) => {
-        paste::paste! {
+        ::paste::paste! {
             /// Concrete data source.
             #[derive(Debug)]
             $vis struct [<$name CSV>](CSVDataSource);

@@ -718,7 +718,7 @@ fn qstr_to_sql(qs: QString) -> Result<String, MyError> {
 #[macro_export]
 macro_rules! gen_gpkg_ds {
     ($vis:vis, $name:expr, $gpkg_url:expr, $layer:expr, $feature:expr) => {
-        paste::paste! {
+        ::paste::paste! {
             /// Concrete GeoPackage source.
             $vis struct [<$name GPkg>](GPkgDataSource);
 

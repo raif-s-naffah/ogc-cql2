@@ -627,7 +627,7 @@ fn qstr_to_sql(qs: QString) -> Result<String, MyError> {
 #[macro_export]
 macro_rules! gen_pg_ds {
     ($vis:vis, $name:expr, $db_url:expr, $table:expr, $feature:expr) => {
-        paste::paste! {
+        ::paste::paste! {
             /// Concrete PostgreSQL+PostGIS source.
             $vis struct [<$name PG>](PGDataSource);
 

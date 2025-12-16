@@ -435,7 +435,7 @@ impl TryFrom<&str> for G {
     }
 }
 
-// Construct new instance from WKB byte array...
+// Construct new instance from GeoPackage WKB byte array...
 impl TryFrom<&[u8]> for G {
     type Error = MyError;
 
