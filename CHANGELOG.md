@@ -1,4 +1,4 @@
-# UNPUBLISHED (2025-12-14)
+# UNPUBLISHED (2025-12-17)
 
 * Clarify context (GeoPackage or PostGIS) WKB mentions refer to.
 * Fully qualify referenced crates in macros.
