@@ -1,5 +1,7 @@
-# UNPUBLISHED (2025-12-17)
+# UNPUBLISHED (2025-12-18)
 
+* DataSource trait now exposes an srid() method to return the SRID of the layer
+  if known/discovered at construction.
 * Clarify context (GeoPackage or PostGIS) WKB mentions refer to.
 * Fully qualify referenced crates in macros.
 * Fixed README spelling mistakes.

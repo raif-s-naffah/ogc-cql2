@@ -14,7 +14,11 @@ pub struct CSVDataSource {
     path: PathBuf,
 }
 
-impl DataSource for CSVDataSource {}
+impl DataSource for CSVDataSource {
+    fn srid(&self) -> Option<u32> {
+        None
+    }
+}
 
 impl CSVDataSource {
     /// Constructor given the file system location of an accessible CSV file.

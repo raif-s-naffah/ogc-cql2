@@ -25,12 +25,15 @@ use std::collections::HashMap;
 /// A dictionary of queryable property names (strings) to [`Queryable`][Q] values.
 pub type Resource = HashMap<String, Q>;
 
-/// _Marker_ trait for a type that can act as a data source provider of _Features_
-/// and [`Resource`]s in the context of processing CQL2 filter expressions.
+/// Trait for a type that can act as a data source provider of _Features_
+/// and [`Resource`]s, including a _Geometry_ attribute, in the context of
+/// processing CQL2 filter expressions.
 ///
 /// A CSV file, and a GeoPackage autonomous database file are examples of this.
-#[allow(dead_code)]
-pub trait DataSource {}
+pub trait DataSource {
+    /// Return SRID of this if it was known at construction; `None` otherwise.
+    fn srid(&self) -> Option<u32>;
+}
 
 /// Capability of a [`DataSource`] to provide an iterator over a collection of
 /// _Features_ or [Resources][Resource].

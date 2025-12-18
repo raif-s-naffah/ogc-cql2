@@ -55,7 +55,11 @@ pub struct PGDataSource {
     srid: u32,
 }
 
-impl DataSource for PGDataSource {}
+impl DataSource for PGDataSource {
+    fn srid(&self) -> Option<u32> {
+        Some(self.srid)
+    }
+}
 
 impl PGDataSource {
     /// Constructor.

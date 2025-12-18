@@ -64,7 +64,11 @@ pub struct GPkgDataSource {
     srid: Option<u32>,
 }
 
-impl DataSource for GPkgDataSource {}
+impl DataSource for GPkgDataSource {
+    fn srid(&self) -> Option<u32> {
+        self.srid
+    }
+}
 
 impl GPkgDataSource {
     /// Constructor.
