@@ -1,7 +1,12 @@
-# UNPUBLISHED (2025-12-18)
+# Version 0.5.0  (2026-01-10)
 
+* Upgrade `unicase` to 2.9.0.
+* Upgrade `tokio` to 1.49.0.
+* Upgrade `jiff` to 0.2.18.
+* Upgrade `serde_json` to 1.0.149.
+* Upgrade `tracing` to 0.1.44.
 * DataSource trait now exposes an srid() method to return the SRID of the layer
-  if known/discovered at construction.
+  if known/discovered at construction --requires bump in version number.
 * Clarify context (GeoPackage or PostGIS) WKB mentions refer to.
 * Fully qualify referenced crates in macros.
 * Fixed README spelling mistakes.
