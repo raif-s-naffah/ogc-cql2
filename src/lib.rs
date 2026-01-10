@@ -44,7 +44,7 @@
 //! ```bash
 //! cargo r --bin repl↵
 //! ```
-//! Read more about it [here](../repl/index.html)
+//! Read more about it [here](https://github.com/raif-s-naffah/ogc-cql2/blob/master/doc/REPL.md)
 //!
 //! # Evaluators
 //!

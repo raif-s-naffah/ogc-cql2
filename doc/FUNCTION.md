@@ -116,7 +116,7 @@ This library supports a subset of data types available in a Rust environment for
 |------------|---------------|--------|------------------------------------------------------------|
 | `boundary` | x: `G`        | `G`    | Return the closure of combinatorial boundary of `x`.       |
 | `buffer`   | x: `G`, y: `N`| `G`    | Return a geometry representing all points whose distance from `x` is less than or equal to `y`.|
-| `envelope` | x: `G`        | `G`    | Return the minimum bouding box of `x`.                     |
+| `envelope` | x: `G`        | `G`    | Return the minimum bounding box of `x`.                    |
 | `centroid` | x: `G`        | `G`    | Return the geometric centre of `x`.                        |
 |`convex_hull`| x: `G`       | `G`    | Return minimum convex geometry that encloses all geometries within `x`.|
 | `get_x`    | x: `G`        | `N`    | Return the _X_ coordinate of `x` if it's a Point.          |

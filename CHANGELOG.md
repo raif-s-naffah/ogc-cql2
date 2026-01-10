@@ -1,3 +1,7 @@
+# UNPUBLISHED (2026-01-11)
+
+* Fixed `repl` broken links.
+
 # Version 0.5.0  (2026-01-10)
 
 * Upgrade `unicase` to 2.9.0.
