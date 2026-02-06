@@ -145,7 +145,7 @@ mod tests {
         let mut stream = gpkg.fetch().await?;
         while let Some(r) = stream.try_next().await? {
             count += 1;
-            // all geometries are valid mulyi-polygons...
+            // all geometries are valid lines...
             let wkb: &[u8] = &r.geom;
             let g = G::try_from(wkb)?;
             assert_eq!(g.type_(), "LineString");
@@ -165,7 +165,7 @@ mod tests {
         let mut stream = gpkg.stream().await?;
         while let Some(r) = stream.try_next().await? {
             count += 1;
-            // all geometries are valid mulyi-polygons...
+            // all geometries are valid lines...
             let queryable = r.get("geom").expect("Missing 'geom'");
             let g = queryable.to_geom()?;
             assert_eq!(g.type_(), "LineString");

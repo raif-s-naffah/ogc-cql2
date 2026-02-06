@@ -11,7 +11,7 @@ use crate::common::{CountryCSV, CountryGPkg, CountryPG, async_runtime};
 use criterion::{Criterion, criterion_group, criterion_main};
 use futures::TryStreamExt;
 use ogc_cql2::prelude::*;
-use std::error::Error;
+use std::{error::Error, time::Duration};
 
 #[rustfmt::skip]
 const COUNTRIES_PREDICATES: [(&str, u32); 12] = [
@@ -194,7 +194,7 @@ fn eval_pg_sql(c: &mut Criterion) {
 
 criterion_group! {
     name = benchmarks;
-    config = Criterion::default().sample_size(10);
+    config = Criterion::default().sample_size(10).measurement_time(Duration::new(110, 0));
     targets = eval_csv, eval_gpkg, eval_gpkg_sql, eval_pg, eval_pg_sql
 }
 criterion_main!(benchmarks);

@@ -1,6 +1,14 @@
-# UNPUBLISHED (2026-01-11)
+# Version 0.5.1 (2026-02-07)
 
+* Fixed Issue #4.
+* Fixed mistakes in some 'tests' comments.
+* Increased Criterion measurement time to silence warnings.
+* Upgrade `jiff` to 0.2.19.
+* Upgrade `criterion` to 0.8.2.
+* Upgrade `thiserror` to 2.0.18.
+* Upgrade `chrono` to 0.4.43.
 * Fixed `repl` broken links.
+* Use latest secondary dependent crates.
 
 # Version 0.5.0  (2026-01-10)
 

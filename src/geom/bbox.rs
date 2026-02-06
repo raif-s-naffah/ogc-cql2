@@ -31,21 +31,21 @@ impl GTrait for BBox {
     }
 
     fn to_wkt_fmt(&self, precision: usize) -> String {
-        if self.z_min.is_none() {
-            format!(
-                "BBOX ({:.4$}, {:.4$}, {:.4$}, {:.4$})",
-                self.w, self.s, self.e, self.n, precision
-            )
-        } else {
+        if let Some(z_min) = self.z_min {
             format!(
                 "BBOX ({:.6$}, {:.6$}, {:.6$}, {:.6$}, {:.6$}, {:.6$})",
                 self.w,
                 self.s,
-                self.z_min.unwrap(),
+                z_min,
                 self.e,
                 self.n,
                 self.z_max.unwrap(),
                 precision
+            )
+        } else {
+            format!(
+                "BBOX ({:.4$}, {:.4$}, {:.4$}, {:.4$})",
+                self.w, self.s, self.e, self.n, precision
             )
         }
     }

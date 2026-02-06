@@ -166,7 +166,7 @@ mod tests {
         for x in csv.iter()? {
             let country = x?;
             count += 1;
-            // all geometries are valid mulyi-polygons...
+            // all geometries are valid multi-polygons...
             let g = G::try_from(country.geom.as_str())?;
             assert_eq!(g.type_(), "MultiPolygon");
         }
@@ -186,7 +186,7 @@ mod tests {
         let mut stream = gpkg.fetch().await?;
         while let Some(c) = stream.try_next().await? {
             count += 1;
-            // all geometries are valid mulyi-polygons...
+            // all geometries are valid multi-polygons...
             let wkb: &[u8] = &c.geom;
             let g = G::try_from(wkb)?;
             assert_eq!(g.type_(), "MultiPolygon");
@@ -242,7 +242,7 @@ mod tests {
             count += 1;
             let queryable = c.get("geom").expect("Missing 'geom'");
             let g = queryable.to_geom()?;
-            // all geometries are valid mulyi-polygons...
+            // all geometries are valid multi-polygons...
             assert_eq!(g.type_(), "MultiPolygon");
         }
 
@@ -260,7 +260,7 @@ mod tests {
             count += 1;
             let queryable = c.get("geom").expect("Missing 'geom'");
             let g = queryable.to_geom()?;
-            // all geometries are valid mulyi-polygons...
+            // all geometries are valid multi-polygons...
             assert_eq!(g.type_(), "MultiPolygon");
         }
 
