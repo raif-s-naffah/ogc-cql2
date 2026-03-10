@@ -1,3 +1,7 @@
+# UNPUBLISHED (2026-03-10)
+
+* Fix spelling mistake in README.md.
+
 # Version 0.5.2 (2026-03-10)
 
 * Use Rust 1.94.0.

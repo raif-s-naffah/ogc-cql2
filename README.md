@@ -40,7 +40,7 @@ That meant that text like `MULTIPOINT(1 2, 3 4)` causes a syntax error forcing t
 This implementation allows both forms.
 
 
-## Deviation from the Stadard
+## Deviation from the Standard
 
 The CQL2 specs state that _Dates_ should be considered as local with regard to time zones. This implementation however always assign them the UTC TZ.
 
