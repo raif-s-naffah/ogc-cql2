@@ -18,7 +18,7 @@
 
 use crate::utils::random_ascii_word;
 use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
-use rand::{Rng, rng};
+use rand::{RngExt, rng};
 use std::error::Error;
 
 const PREFIX: &str = "Foo";

@@ -37,7 +37,7 @@ use crate::utils::random_ascii_word;
 use jiff::{Timestamp, ToSpan, civil::Date};
 use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
 use rand::{
-    Rng,
+    RngExt,
     distr::{Distribution, Uniform},
 };
 use std::error::Error;

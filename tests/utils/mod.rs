@@ -18,7 +18,7 @@ use ogc_cql2::{
     StreamableDS,
 };
 use rand::{
-    Rng,
+    RngExt,
     distr::{
         Alphanumeric,
         uniform::{UniformChar, UniformSampler},

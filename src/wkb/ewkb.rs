@@ -211,7 +211,7 @@ mod tests {
         ];
 
         let ewkb = EWKB::try_from(bytes)?;
-        assert_eq!(ewkb.srid().as_usize()?, 4326);
+        assert_eq!(ewkb.srid().into_inner(), 4326);
 
         let g = ewkb.geom();
         assert!(g.is_2d());

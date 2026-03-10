@@ -166,7 +166,7 @@ mod tests {
         // should be the same as that of the corresponding env. variable...
         let actual = config().default_srid();
         let expected = var("DEFAULT_SRID")?;
-        assert_eq!(actual.as_usize()?.to_string(), expected);
+        assert_eq!(actual.into_inner().to_string(), expected);
 
         Ok(())
     }

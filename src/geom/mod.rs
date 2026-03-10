@@ -382,7 +382,7 @@ impl G {
             G::BBox(x) => x.to_sql(),
             x => {
                 let wkt = x.to_wkt();
-                let srid = self.srid().as_usize()?;
+                let srid = self.srid().into_inner();
                 Ok(format!("ST_GeomFromText('{wkt}', {srid})"))
             }
         }
@@ -450,7 +450,7 @@ impl TryFrom<Geometry> for G {
     type Error = MyError;
 
     fn try_from(value: Geometry) -> Result<Self, Self::Error> {
-        match value.geometry_type() {
+        match value.geometry_type()? {
             GeometryTypes::Point => {
                 let g = Point::try_from(value)?;
                 Ok(G::Point(g))
@@ -493,7 +493,7 @@ impl TryFrom<ConstGeometry<'_>> for G {
     type Error = MyError;
 
     fn try_from(value: ConstGeometry) -> Result<Self, Self::Error> {
-        match value.geometry_type() {
+        match value.geometry_type()? {
             GeometryTypes::Point => {
                 let g = Point::try_from(value)?;
                 Ok(G::Point(g))

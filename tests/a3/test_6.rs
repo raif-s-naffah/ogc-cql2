@@ -17,7 +17,7 @@
 //!
 
 use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
-use rand::Rng;
+use rand::RngExt;
 use std::error::Error;
 
 #[test]

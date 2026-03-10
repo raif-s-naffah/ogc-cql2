@@ -97,7 +97,7 @@ impl Polygon {
         let vertices: Vec<&[f64]> = rings[0].iter().map(|x| x.as_slice()).collect();
         let xy = CoordSeq::new_from_vec(&vertices)?;
         let mut exterior = Geometry::create_linear_ring(xy)?;
-        let srs_id = srid.as_usize()?;
+        let srs_id = srid.into_inner();
         exterior.set_srid(srs_id);
 
         let mut interiors = vec![];
@@ -123,8 +123,7 @@ impl Polygon {
         let xy = Line::from_geos_xy(outer)?;
         result.push(xy);
 
-        let n = u32::try_from(num_inners)?;
-        for ndx in 0..n {
+        for ndx in 0..num_inners {
             let inner = gg.get_interior_ring_n(ndx)?;
             let xy = Line::from_geos_xy(inner)?;
             result.push(xy);

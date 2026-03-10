@@ -120,7 +120,7 @@ impl Geometries {
             })
             .collect();
         let mut g = Geometry::create_geometry_collection(items?)?;
-        let srs_id = self.srid.as_usize()?;
+        let srs_id = self.srid.into_inner();
         g.set_srid(srs_id);
 
         Ok(g)

@@ -160,7 +160,7 @@ mod tests {
             0x8b, 0x07, 0x4a, 0xc0, 0x9e, 0xf3, 0x44, 0x40
         ];
         let wkb = WKB::try_from(bytes)?;
-        assert_eq!(wkb.srid().as_usize()?, 4326);
+        assert_eq!(wkb.srid().into_inner(), 4326);
         let g = wkb.geom();
         println!("g = {g}");
 
@@ -243,7 +243,7 @@ mod tests {
             0x5c, 0xdf, 0xb7, 0x5f, 0x7b, 0xa0, 0x56, 0x40, 0xb0, 0x18, 0x12, 0xa9, 0xbd, 0xc7, 0x36, 0x40
         ];
         let wkb = WKB::try_from(bytes)?;
-        assert_eq!(wkb.srid().as_usize()?, 4326);
+        assert_eq!(wkb.srid().into_inner(), 4326);
 
         let z_envelope = wkb.envelope();
         assert_eq!(z_envelope.len(), 4);
@@ -327,7 +327,7 @@ mod tests {
             0xf0, 0x73, 0xda, 0xe0, 0x62, 0x79, 0x66, 0xc0, 0x2e, 0xc5, 0x21, 0x8a, 0x58, 0x05, 0x30, 0xc0
         ];
         let wkb = WKB::try_from(bytes)?;
-        assert_eq!(wkb.srid().as_usize()?, 4326);
+        assert_eq!(wkb.srid().into_inner(), 4326);
 
         let z_envelope = wkb.envelope();
         assert_eq!(z_envelope.len(), 4);
@@ -1074,7 +1074,7 @@ mod tests {
         ];
 
         let geom = WKB::try_from(bytes)?;
-        assert_eq!(geom.srid().as_usize()?, 4326);
+        assert_eq!(geom.srid().into_inner(), 4326);
 
         let z_envelope = geom.envelope();
         assert_eq!(z_envelope.len(), 4);

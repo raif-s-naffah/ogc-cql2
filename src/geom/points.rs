@@ -95,7 +95,7 @@ impl Points {
             points.push(g);
         }
         let mut g = Geometry::create_multipoint(points)?;
-        let srs_id = self.srid.as_usize()?;
+        let srs_id = self.srid.into_inner();
         g.set_srid(srs_id);
 
         Ok(g)

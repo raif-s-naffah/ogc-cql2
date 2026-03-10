@@ -576,7 +576,7 @@ mod tests {
     };
     use jiff::civil::DateTime;
     use rand::{
-        Rng,
+        RngExt,
         distr::{Alphanumeric, Distribution, StandardUniform},
     };
     use std::error::Error;

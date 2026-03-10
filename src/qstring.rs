@@ -272,7 +272,7 @@ impl QString {
 mod tests {
     use super::*;
     use rand::{
-        Rng,
+        RngExt,
         distr::{
             Alphanumeric,
             uniform::{UniformChar, UniformSampler},
@@ -440,7 +440,7 @@ mod tests {
         // generate random word, 5 to 10 characters long from latin characters.
         fn random_latin_word() -> String {
             let mut rng = rand::rng();
-            let len: usize = Rng::random_range(&mut rng, 5..10);
+            let len: usize = RngExt::random_range(&mut rng, 5..10);
             let dist = UniformChar::new_inclusive('\u{0041}', '\u{024F}').unwrap();
             (0..len).map(|_| dist.sample(&mut rng)).collect()
         }

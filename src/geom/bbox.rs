@@ -226,7 +226,7 @@ impl BBox {
             pp.to_wkt()
         };
 
-        let srid = self.srid().as_usize()?;
+        let srid = self.srid().into_inner();
         Ok(format!("ST_GeomFromText('{wkt}', {srid})"))
     }
 

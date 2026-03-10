@@ -1,3 +1,14 @@
+# Version 0.5.2 (2026-03-10)
+
+* Use Rust 1.94.0.
+* Fixed Issue #5.
+* Upgrade `jiff` to 0.2.23.
+* Upgrade `geos` to 11.1.1 + feature 'v3_14_0'.
+* Upgrade `tokio` to 1.50.0.
+* Upgrade `serde_with` to 3.17.0.
+* Upgrade `rand` to 0.10.0 + replace `rand::Rng` w/ `rand::RngExt`.
+* Upgrade `tracing-test` to 0.2.6.
+
 # Version 0.5.1 (2026-02-07)
 
 * Fixed Issue #4.

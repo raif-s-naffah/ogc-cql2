@@ -96,7 +96,7 @@ impl Point {
     pub(crate) fn to_geos_xy(xy: &[f64], srid: &SRID) -> Result<Geometry, MyError> {
         let xy = CoordSeq::new_from_vec(&[xy])?;
         let mut g = Geometry::create_point(xy)?;
-        let srs_id = srid.as_usize()?;
+        let srs_id = srid.into_inner();
         g.set_srid(srs_id);
 
         Ok(g)

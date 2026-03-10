@@ -15,7 +15,7 @@
 //!
 
 use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, Q, Resource};
-use rand::{Rng, distr::Uniform};
+use rand::{RngExt, distr::Uniform};
 use std::error::Error;
 
 #[test]

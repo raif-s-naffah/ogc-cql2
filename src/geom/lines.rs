@@ -92,7 +92,7 @@ impl Lines {
             lines.push(g);
         }
         let mut g = Geometry::create_multiline_string(lines)?;
-        let srs_id = self.srid.as_usize()?;
+        let srs_id = self.srid.into_inner();
         g.set_srid(srs_id);
 
         Ok(g)

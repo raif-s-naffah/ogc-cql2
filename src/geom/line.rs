@@ -102,7 +102,7 @@ impl Line {
         let vertices: Vec<&[f64]> = xy.iter().map(|x| x.as_slice()).collect();
         let xy = CoordSeq::new_from_vec(&vertices)?;
         let mut g = Geometry::create_line_string(xy)?;
-        let srs_id = srid.as_usize()?;
+        let srs_id = srid.into_inner();
         g.set_srid(srs_id);
 
         Ok(g)
@@ -116,13 +116,13 @@ impl Line {
     pub(crate) fn from_geos_xy<T: Geom>(gg: T) -> Result<XY2V, MyError> {
         let cs = gg.get_coord_seq()?;
         let is_3d = match cs.dimensions()? {
-            CoordDimensions::OneD => {
-                let msg = "Don't know how to handle 1D points";
+            CoordDimensions::TwoD => false,
+            CoordDimensions::ThreeD => true,
+            _ => {
+                let msg = "Don't know how to handle other than 2D or 3D coordinates";
                 error!("Failed: {msg}");
                 return Err(MyError::Runtime(msg.into()));
             }
-            CoordDimensions::TwoD => false,
-            CoordDimensions::ThreeD => true,
         };
         let num_vertices = cs.size()?;
         let mut xy = Vec::with_capacity(num_vertices);

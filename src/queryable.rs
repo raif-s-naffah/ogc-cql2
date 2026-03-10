@@ -506,7 +506,7 @@ impl From<Bound> for Q {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::Rng;
+    use rand::RngExt;
 
     #[test]
     fn test_usize_max() {

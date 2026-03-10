@@ -71,8 +71,8 @@ impl fmt::Display for SRID {
 }
 
 impl SRID {
-    pub(crate) fn as_usize(&self) -> Result<usize, MyError> {
-        let it = usize::try_from(self.0)?;
-        Ok(it)
+    /// Return the inner CRS code - an `i32` value.
+    pub(crate) fn into_inner(self) -> i32 {
+        self.0
     }
 }
