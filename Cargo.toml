@@ -14,7 +14,7 @@ tracing = "0.1.44"
 dotenvy = "0.15.7"
 thiserror = "2.0.18"
 peg = "0.8.5"
-geos = { version = "11.1.1", features = ["v3_14_0"] }
+geos = { version = "11.1.1", features = ["v3_12_0"] }
 proj = { version = "0.31.0", default-features = false }
 jiff = { version = "0.2.23", features = ["serde"] }
 unicode-normalization = "0.1.25"
@@ -26,7 +26,7 @@ serde_json = "1.0.149"
 serde_with = { version = "3.17.0", features = ["macros"] }
 # used in 'typify' generated code, which in turn is used, after modification,
 # to bootstrap the JSON-encoded parser
-regress = { version = "0.10.5", features = ["prohibit-unsafe"] }
+regress = { version = "0.11.0", features = ["prohibit-unsafe"] }
 csv = "1.4.0"
 tokio = { version = "1.50.0", features = ["full"] }
 sqlx = { version = "0.9.0-alpha.1", features = [

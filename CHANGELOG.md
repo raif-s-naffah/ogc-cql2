@@ -1,5 +1,7 @@
-# UNPUBLISHED (2026-03-10)
+# UNPUBLISHED|Version 0.5.3 (2026-03-10)
 
+* Fixed Issue #6 - use `geos` 11.1.1 + feature 'v3_12_0'.
+* Upgrade `regress` to 0.11.0.
 * Fix spelling mistake in README.md.
 
 # Version 0.5.2 (2026-03-10)

@@ -26,7 +26,6 @@ pub use polygons::*;
 use crate::{MyError, config::config, crs::CRS, srid::SRID, text::cql2::wkt, wkb::*};
 use core::fmt;
 use geos::{ConstGeometry, Geom, Geometry, GeometryTypes};
-use tracing::error;
 
 // type aliases to silence clippy + work nicely w/ macros...
 pub(crate) type XY1V = Vec<f64>;
@@ -479,11 +478,12 @@ impl TryFrom<Geometry> for G {
                 let g = Geometries::try_from(value)?;
                 Ok(G::Vec(g))
             }
-            x => {
-                let msg = format!("Unknown ({x:?}) geometry type");
-                error!("Failed: {msg}");
-                Err(MyError::Runtime(msg.into()))
-            }
+            // IMPORTANT (rsn) 20260310 - not needed w/ GEOS 3.12
+            // x => {
+            //     let msg = format!("Unknown ({x:?}) geometry type");
+            //     error!("Failed: {msg}");
+            //     Err(MyError::Runtime(msg.into()))
+            // }
         }
     }
 }
@@ -522,11 +522,12 @@ impl TryFrom<ConstGeometry<'_>> for G {
                 let g = Geometries::try_from(value)?;
                 Ok(G::Vec(g))
             }
-            x => {
-                let msg = format!("Unknown ({x:?}) geometry type");
-                error!("Failed: {msg}");
-                Err(MyError::Runtime(msg.into()))
-            }
+            // IMPORTANT (rsn) 20260310 - not needed w/ GEOS 3.12
+            // x => {
+            //     let msg = format!("Unknown ({x:?}) geometry type");
+            //     error!("Failed: {msg}");
+            //     Err(MyError::Runtime(msg.into()))
+            // }
         }
     }
 }
