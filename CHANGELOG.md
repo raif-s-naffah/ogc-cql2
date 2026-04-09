@@ -1,8 +1,11 @@
-# UNPUBLISHED|Version 0.5.3 (2026-03-10)
+# Version 0.5.3 (2026-04-10)
 
 * Fixed Issue #6 - use `geos` 11.1.1 + feature 'v3_12_0'.
-* Upgrade `regress` to 0.11.0.
+* Upgrade `regress` to 0.11.1.
+* Upgrade `serde_with` to 3.18.0.
+* Upgrade `tokio` to 1.51.1.
 * Fix spelling mistake in README.md.
+* Use latest secondary dependent crates.
 
 # Version 0.5.2 (2026-03-10)
 
