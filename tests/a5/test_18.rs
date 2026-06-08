@@ -14,9 +14,10 @@
 //! * assert successful execution of the evaluation.
 //!
 
-use crate::utils::{PlaceCSV, PlaceGPkg, PlacePG, harness, harness_gpkg, harness_sql};
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 use std::error::Error;
 
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 #[rustfmt::skip]
 const PREDICATES: [(&str, &str, &str, &str, u32); 10] = [
     (r#"CASEI(name)=casei('KIEV')"#,         r#"CASEI(name)=casei('København')"#,
@@ -50,8 +51,11 @@ const PREDICATES: [(&str, &str, &str, &str, u32); 10] = [
      r#"CASEI(name)=casei('KØBENHAVN')"#,    r#"pop_other=1038288"#,                242),
 ];
 
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlaceCSV, harness};
+
     // compose the predicates into a single Expression...
     let mut expressions = vec![];
     for (p1, p2, p3, p4, count) in PREDICATES {
@@ -64,8 +68,11 @@ fn test() -> Result<(), Box<dyn Error>> {
     harness(ds, &predicates)
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlaceGPkg, harness_gpkg};
+
     let mut expressions = vec![];
     for (p1, p2, p3, p4, count) in PREDICATES {
         let ex = format!("((NOT {p1} AND {p2}) OR ({p3} and NOT {p4}) or not ({p1} AND {p4}))");
@@ -77,8 +84,11 @@ async fn test_gpkg() -> Result<(), Box<dyn Error>> {
     harness_gpkg(ds, &predicates).await
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlaceGPkg, harness_sql};
+
     let mut expressions = vec![];
     for (p1, p2, p3, p4, count) in PREDICATES {
         let ex = format!("((NOT {p1} AND {p2}) OR ({p3} and NOT {p4}) or not ({p1} AND {p4}))");
@@ -90,9 +100,12 @@ async fn test_sql() -> Result<(), Box<dyn Error>> {
     harness_sql(ds, &predicates).await
 }
 
+#[cfg(feature = "pg_ds")]
 #[tokio::test]
 #[ignore = "Works but slow (58+ secs.) :("]
 async fn test_pg_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlacePG, harness_sql};
+
     let mut expressions = vec![];
     for (p1, p2, p3, p4, count) in PREDICATES {
         let ex = format!("((NOT {p1} AND {p2}) OR ({p3} and NOT {p4}) or not ({p1} AND {p4}))");

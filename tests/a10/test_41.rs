@@ -46,9 +46,10 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{PlaceCSV, PlaceGPkg, PlacePG, harness, harness_gpkg, harness_sql};
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 use std::error::Error;
 
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 #[rustfmt::skip]
 const TIMESTAMP_PREDICATES: [(&str, u32); 15] = [
     ("T_AFTER(INTERVAL(start,end),INTERVAL(       '2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))", 2),
@@ -68,6 +69,7 @@ const TIMESTAMP_PREDICATES: [(&str, u32); 15] = [
     ("T_STARTS(INTERVAL(start,end),INTERVAL(      '2021-01-01T00:00:00Z','2021-12-31T23:59:59Z'))", 0),
 ];
 
+#[allow(dead_code)]
 #[rustfmt::skip]
 const DATE_PREDICATES: [(&str, u32); 15] = [
     ("T_AFTER(       INTERVAL(date,'..'),INTERVAL('2021-01-01','2021-12-31'))", 2),
@@ -87,50 +89,74 @@ const DATE_PREDICATES: [(&str, u32); 15] = [
     ("T_STARTS(      INTERVAL(date,'..'),INTERVAL('2021-01-01','2021-12-31'))", 0),
 ];
 
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test_timestamps() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlaceCSV, harness};
+
     let ds = PlaceCSV::new();
     harness(ds, &TIMESTAMP_PREDICATES)
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_timestamps_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlaceGPkg, harness_gpkg};
+
     let ds = PlaceGPkg::new().await?;
     harness_gpkg(ds, &TIMESTAMP_PREDICATES).await
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_timestamps_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlaceGPkg, harness_sql};
+
     let ds = PlaceGPkg::new().await?;
     harness_sql(ds, &TIMESTAMP_PREDICATES).await
 }
 
+#[cfg(feature = "pg_ds")]
 #[tokio::test]
 async fn test_timestamps_pg_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlacePG, harness_sql};
+
     let ds = PlacePG::new().await?;
     harness_sql(ds, &TIMESTAMP_PREDICATES).await
 }
 
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test_dates() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlaceCSV, harness};
+
     let ds = PlaceCSV::new();
     harness(ds, &DATE_PREDICATES)
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_dates_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlaceGPkg, harness_gpkg};
+
     let ds = PlaceGPkg::new().await?;
     harness_gpkg(ds, &DATE_PREDICATES).await
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_dates_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlaceGPkg, harness_sql};
+
     let ds = PlaceGPkg::new().await?;
     harness_sql(ds, &DATE_PREDICATES).await
 }
 
+#[cfg(feature = "pg_ds")]
 #[tokio::test]
 async fn test_dates_pg_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlacePG, harness_sql};
+
     let ds = PlacePG::new().await?;
     harness_sql(ds, &DATE_PREDICATES).await
 }

@@ -53,10 +53,12 @@ pub enum MyError {
     Runtime(Cow<'static, str>),
 
     /// CSV error.
+    #[cfg(feature = "csv_ds")]
     #[error("CSV error: {0}")]
     CSV(#[from] csv::Error),
 
     /// SqlX error.
+    #[cfg(any(feature = "gpkg_ds", feature = "pg_ds"))]
     #[error("SQLx error: {0}")]
     SQL(#[from] sqlx::Error),
 

@@ -13,12 +13,10 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{
-    CountryCSV, CountryGPkg, CountryPG, PlaceCSV, PlaceGPkg, PlacePG, RiverCSV, RiverGPkg, RiverPG,
-    harness, harness_gpkg, harness_sql,
-};
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 use std::error::Error;
 
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 #[rustfmt::skip]
 const PLACES_PREDICATES: [(&str, u32); 76] = [
     ("'København'=name",     1),
@@ -101,6 +99,7 @@ const PLACES_PREDICATES: [(&str, u32); 76] = [
     ("T_STARTS(interval('2022-04-16T10:13:19Z','2022-04-16T10:15:10Z'),interval(start,end))",       1)
 ];
 
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 #[rustfmt::skip]
 const COUNTRIES_PREDICATES: [(&str, u32); 18] = [
     ("S_INTERSECTS(BBOX(0,40,10,50),geom)",                      8),
@@ -132,6 +131,7 @@ const COUNTRIES_PREDICATES: [(&str, u32); 18] = [
     ("S_OVERLAPS(BBOX(-180,-90,0,90),geom)",         11),
 ];
 
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 #[rustfmt::skip]
 const RIVERS_PREDICATES: [(&str, u32); 7] = [
     ("S_INTERSECTS(BBOX(-180,-90,0,90),geom)",        4),
@@ -143,75 +143,111 @@ const RIVERS_PREDICATES: [(&str, u32); 7] = [
     ("S_CONTAINS(BBOX(-180,-90,0,90),geom)",          4),
 ];
 
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test_places() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlaceCSV, harness};
+
     let ds = PlaceCSV::new();
     harness(ds, &PLACES_PREDICATES)
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_places_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlaceGPkg, harness_gpkg};
+
     let ds = PlaceGPkg::new().await?;
     harness_gpkg(ds, &PLACES_PREDICATES).await
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_places_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlaceGPkg, harness_sql};
+
     let gpkg = PlaceGPkg::new().await?;
     harness_sql(gpkg, &PLACES_PREDICATES).await
 }
 
+#[cfg(feature = "pg_ds")]
 #[tokio::test]
 #[ignore = "Works but too slow (94+ secs.) :("]
 async fn test_places_pg_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlacePG, harness_sql};
+
     let gpkg = PlacePG::new().await?;
     harness_sql(gpkg, &PLACES_PREDICATES).await
 }
 
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test_countries() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryCSV, harness};
+
     let ds = CountryCSV::new();
     harness(ds, &COUNTRIES_PREDICATES)
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_countries_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryGPkg, harness_gpkg};
+
     let ds = CountryGPkg::new().await?;
     harness_gpkg(ds, &COUNTRIES_PREDICATES).await
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_countries_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryGPkg, harness_sql};
+
     let gpkg = CountryGPkg::new().await?;
     harness_sql(gpkg, &COUNTRIES_PREDICATES).await
 }
 
+#[cfg(feature = "pg_ds")]
 #[tokio::test]
 async fn test_countries_pg_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryPG, harness_sql};
+
     let gpkg = CountryPG::new().await?;
     harness_sql(gpkg, &COUNTRIES_PREDICATES).await
 }
 
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test_rivers() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{RiverCSV, harness};
+
     let ds = RiverCSV::new();
     harness(ds, &RIVERS_PREDICATES)
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_rivers_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{RiverGPkg, harness_gpkg};
+
     let ds = RiverGPkg::new().await?;
     harness_gpkg(ds, &RIVERS_PREDICATES).await
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_rivers_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{RiverGPkg, harness_sql};
+
     let gpkg = RiverGPkg::new().await?;
     harness_sql(gpkg, &RIVERS_PREDICATES).await
 }
 
+#[cfg(feature = "pg_ds")]
 #[tokio::test]
 async fn test_rivers_pg_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{RiverPG, harness_sql};
+
     let gpkg = RiverPG::new().await?;
     harness_sql(gpkg, &RIVERS_PREDICATES).await
 }

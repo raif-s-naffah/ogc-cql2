@@ -14,12 +14,10 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{
-    CountryCSV, CountryGPkg, CountryPG, PlaceCSV, PlaceGPkg, PlacePG, harness, harness_gpkg,
-    harness_sql,
-};
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 use std::error::Error;
 
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 #[rustfmt::skip]
 const COUNTRIES_PREDICATES: [(&str, u32); 12] = [
     (r#"NAME='Luxembourg'"#,    1),
@@ -36,7 +34,7 @@ const COUNTRIES_PREDICATES: [(&str, u32); 12] = [
     (r#"POP_EST<37589262"#,  138),
     (r#"POP_EST<>37589262"#, 176),
 ];
-
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 #[rustfmt::skip]
 const PLACES_PREDICATES: [(&str, u32); 36] = [
     (r#"name IS NOT NULL"#,  243),
@@ -81,51 +79,75 @@ const PLACES_PREDICATES: [(&str, u32); 36] = [
     (r#"boolean=false"#,       1),
 ];
 
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test_countries() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryCSV, harness};
+
     let ds = CountryCSV::new();
     harness(ds, &COUNTRIES_PREDICATES)
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_countries_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryGPkg, harness_gpkg};
+
     let ds = CountryGPkg::new().await?;
     harness_gpkg(ds, &COUNTRIES_PREDICATES).await
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_countries_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryGPkg, harness_sql};
+
     let ds = CountryGPkg::new().await?;
     harness_sql(ds, &COUNTRIES_PREDICATES).await
 }
 
+#[cfg(feature = "pg_ds")]
 #[tokio::test]
 async fn test_countries_pg_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryPG, harness_sql};
+
     let ds = CountryPG::new().await?;
     harness_sql(ds, &COUNTRIES_PREDICATES).await
 }
 
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test_places() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlaceCSV, harness};
+
     let ds = PlaceCSV::new();
     harness(ds, &PLACES_PREDICATES)
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_places_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlaceGPkg, harness_gpkg};
+
     let ds = PlaceGPkg::new().await?;
     harness_gpkg(ds, &PLACES_PREDICATES).await
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_places_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlaceGPkg, harness_sql};
+
     let ds = PlaceGPkg::new().await?;
     harness_sql(ds, &PLACES_PREDICATES).await
 }
 
+#[cfg(feature = "pg_ds")]
 #[tokio::test]
 #[ignore = "Works but slow (60+ secs.) :("]
 async fn test_places_pg_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlacePG, harness_sql};
+
     let ds = PlacePG::new().await?;
     harness_sql(ds, &PLACES_PREDICATES).await
 }

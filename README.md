@@ -8,7 +8,7 @@ So far, users of this library will be able to:
 
 * Parse CQL2 _Expressions_ in either Text- or JSON-encoded forms,
 * Implement _Evaluators_ to process collections of _Resources_ (a.k.a features) against valid expressions.
-* Make use of a comprehensive set of builtin _Functions_ to use in writing their expressions.
+* Make use of a comprehensive set of built-in _Functions_ to use in writing their expressions.
 * Implement their own versions of _Functions_ and register them w/ _Evaluators_.
 * Evaluate CQL2 _Expressions_ against records provided by _Data Sources_ through two traits: _Iterable_ and _Streamable_.  So far implementations for _CSV_, _GeoPackage_, and _PostGIS_ data-sources are included.
 
@@ -59,9 +59,16 @@ The _GeoPackage_ DB/file is used for testing the _GeoPackage Data Source_ and th
 
 The other 2 folders next to `csv` in the same parent folder mirror the same data found [here][3].
 
-As of version 0.4.0, this project supports _PostGIS_ enabled _PostgreSQL_ tables to act as _Data Sources_. Tests and benchmarks expect a database named `cql2`, w/ the _PostGIS_ extension, to be accessible at the URL stored in `$PG_URL` &mdash;see Configuration section. The contents of this database was populated from the _GeoPackage_ DB file referenced above using the `ogr2ogr` command line tool.
+As of version 0.4.0, this project supports _PostGIS_ enabled _PostgreSQL_ tables to act as _Data Sources_. Tests and benchmarks expect a database named `cql2`, w/ the _PostGIS_ extension, to be accessible at the URL stored in `$PG_URL` &mdash;see Configuration section. The contents of this database was populated from the _GeoPackage_ DB file referenced above using the `ogr2ogr` command line tool; i.e. `ogr2ogr -f PostgreSQL "PG:dbname=gadm" ne110m4cql2.gpkg -lco LAUNDER=NO`.
 
-Finally, the `ne_110m_populated_places_simple` table's `start` and `end` columns were altered from `TIMESTAMPTZ` to be just `TIMESTAMP`.
+Finally, the `ne_110m_populated_places_simple` table's `start` and `end` columns were altered from `TIMESTAMPTZ` to be just `TIMESTAMP` like so...
+```sql
+set timezone = 'UTC';
+alter table ne_110m_populated_places_simple
+  alter column "start" type timestamp,
+  alter column "end" type timestamp;
+reset timezone;
+```
 
 ### Tests not implemented yet
 
@@ -129,10 +136,10 @@ To exercise the _PostGIS_ data sources, an accessible PostGIS enabled database n
 
 ### PostgreSQL connection pool parameters
 #### `PG_MAX_CONNECTIONS`
-Maximum number of connections the builtin pool will maintain. Default is `8`.
+Maximum number of connections the built-in pool will maintain. Default is `8`.
 
 #### `PG_MIN_CONNECTIONS`
-Minimum number of connections the builtin pool will maintain at all times. Default is `2`.
+Minimum number of connections the built-in pool will maintain at all times. Default is `2`.
 
 #### `PG_ACQUIRE_TIMEOUT_SECS`
 Maximum amount of seconds to wait for a connection to be acquired. Default is `8`.
@@ -207,10 +214,34 @@ Description     : SpatiaLite is a a library extending the basic SQLite core in o
 Vendor          : Fedora Project
 ```
 
+## Features
+This project, as of Version 0.6.0, allows users the ability to process GIS data provided by different data-source types, gated by the following features:
+
+| Feature   | Data Source                                         |
+|-----------|-----------------------------------------------------|
+| `csv_ds`  | Comma Separated Values (CSV) textual data.<br/>Geometry columns are Well Known Text (WKT) strings.<br/>Properties are formatted strings. |
+| `gpkg_ds` | _GeoPackage_ data.<br/>Geometry columns are Well Known Binary (WKB) bytes.<br/>Properties are standard SQLite types. |
+| `pg_ds`   | _PostGIS_ tables.<br/>Geometry columns are Well Known Binary (WKB) bytes.<br/>Properties are standard PostgreSQL types. |
+| `all`     | Convenience feature that activates all supported data-sources. |
+
+So, for example, in your project, when using this w/ only CSV data, add the following to your `Cargo.toml`:
+```toml
+ogc_cql2 = { version = "...", features = ["csv_ds"] }
+```
+Or, if CSV and GeoPackage data are to be processed, then add...
+```toml
+ogc_cql2 = { version = "...", features = ["csv_ds", "gpkg_ds"] }
+```
+Finally, to activate all data-sources/features, add...
+```toml
+ogc_cql2 = { version = "...", features = ["all"] }
+```
+
 ## TODO
 
 In no particular order...
 
+- [ ] Implement more _Data Sources_ such [FlatGeobuf](https://flatgeobuf.org/).
 - [ ] Add an option to the `repl` command line tool to output valid expressions as SQL WHERE clauses.
 - [ ] Investigate implementing basic spatial operators for 2D geometries in pure Rust; i.e. removing dependence on the `geos` crate.
 - [ ] Implement missing conformance tests preferably after finding an external set of Test Vectors.
@@ -222,7 +253,7 @@ In no particular order...
 - [ ] Improve performance.
 - [ ] Reduce code repetition by using more macros.
 - [ ] Investigate alternative means for external clients to inject functions logic + metadata.
-- [x] Implement more _Data Sources_ such as _Shapefiles_ ~~and _PostGIS tables_.~~
+- [x] ~~Implement more _Data Sources_ such as _Shapefiles_ and _PostGIS tables_.~~
 - [x] ~~Investigate ways of translating _Expressions_ to PostGIS clauses + views.~~
 - [x] ~~The WKT parsing machinery entry-point is private. Make it public.~~ Done 2025-08-31.
 - [x] ~~Properly manage + handle global configurable options such as default CRS bearing in mind how it may affect conformance tests.~~ Done 2025-09-02.

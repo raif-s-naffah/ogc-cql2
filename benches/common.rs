@@ -18,7 +18,7 @@ const COUNTRIES_TBL: &str = "ne_110m_admin_0_countries";
 const PG_DB_NAME: &str = "cql2";
 
 // code to read and group all text-encoded samples in an array.
-fn text_samples_to_vec() -> Result<(), Box<dyn std::error::Error>> {
+fn text_samples_to_vec() -> Result<(), Box<dyn Error>> {
     let mut it = vec![];
     let mut count = 0;
     for entry in walkdir::WalkDir::new("tests/samples/text") {
@@ -162,7 +162,7 @@ pub(crate) const TEXT_SAMPLES: [&str; 120] = [
 ];
 
 // likewise for JSON-encoded ones...
-fn json_samples_to_vec() -> Result<(), Box<dyn std::error::Error>> {
+fn json_samples_to_vec() -> Result<(), Box<dyn Error>> {
     let mut it = vec![];
     let mut count = 0;
     for entry in walkdir::WalkDir::new("tests/samples/json") {

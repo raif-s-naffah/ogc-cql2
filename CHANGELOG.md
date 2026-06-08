@@ -1,3 +1,11 @@
+# Version 0.6.0 (2026-06-08)
+
+* Introduce conditional compilation features, one for each supported
+  data-source type (csv, geopackage, postgis).
+* Use Rust 1.96.0.
+* Corrected, improved + updated documentation.
+* Upgrade dependencies to latest versions.
+
 # Version 0.5.3 (2026-04-10)
 
 * Fixed Issue #6 - use `geos` 11.1.1 + feature 'v3_12_0'.

@@ -6,7 +6,7 @@
 //!
 
 use crate::{
-    CRS, EPSG_4326, GTrait, MyError, Polygon, Polygons, geom::ensure_precision, srid::SRID,
+    CRS, EPSG_4326, GTrait, MyError, geom::ensure_precision, srid::SRID,
 };
 use core::fmt;
 use geos::{CoordSeq, Geometry};
@@ -183,6 +183,7 @@ impl BBox {
 
     // some services do not handle this type of geometry but can deal w/ it if
     // it's portrayed as a [Multi]Polygon instead.
+    #[cfg(any(feature = "gpkg_ds", feature = "pg_ds"))]
     pub(crate) fn to_sql(&self) -> Result<String, MyError> {
         // similar to `to_geos` we need to detect when crossing dateline...
         let x1 = self.w;
@@ -192,7 +193,7 @@ impl BBox {
 
         // if x_min is larger than x_max, then the box spans the antimeridian...
         let wkt = if x1 < x2 {
-            let p = Polygon::from_xy_and_srid_unchecked(
+            let p = super::Polygon::from_xy_and_srid_unchecked(
                 vec![vec![
                     vec![x1, y1],
                     vec![x2, y1],
@@ -204,7 +205,7 @@ impl BBox {
             );
             p.to_wkt()
         } else {
-            let pp = Polygons::from_xy_and_srid(
+            let pp = super::Polygons::from_xy_and_srid(
                 vec![
                     vec![vec![
                         vec![x1, y1],

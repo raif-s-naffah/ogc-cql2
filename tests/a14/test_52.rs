@@ -12,9 +12,10 @@
 //! * assert successful execution of the evaluation.
 //!
 
-use crate::utils::{CountryCSV, CountryGPkg, CountryPG, harness, harness_gpkg, harness_sql};
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 use std::error::Error;
 
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 #[rustfmt::skip]
 const PREDICATES: [(&str, u32); 13] = [
     ("POP_EST=25364300+7",          1),
@@ -34,26 +35,38 @@ const PREDICATES: [(&str, u32); 13] = [
         3*1000000+13258,3*1000000+13257,30*100000+13259)"#,   176),
 ];
 
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryCSV, harness};
+
     let ds = CountryCSV::new();
     harness(ds, &PREDICATES)
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryGPkg, harness_gpkg};
+
     let ds = CountryGPkg::new().await?;
     harness_gpkg(ds, &PREDICATES).await
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryGPkg, harness_sql};
+
     let gpkg = CountryGPkg::new().await?;
     harness_sql(gpkg, &PREDICATES).await
 }
 
+#[cfg(feature = "pg_ds")]
 #[tokio::test]
 async fn test_pg_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryPG, harness_sql};
+
     let gpkg = CountryPG::new().await?;
     harness_sql(gpkg, &PREDICATES).await
 }

@@ -5,21 +5,25 @@
 //! can be used by the library.
 //!
 
-use crate::utils::{GPKG_URL, PG_DB_NAME};
-use core::fmt;
+#[cfg(feature = "csv_ds")]
 use csv::StringRecord;
+#[cfg(any(feature = "gpkg_ds", feature = "pg_ds"))]
 use futures::{StreamExt, TryStreamExt};
-use ogc_cql2::{gen_pg_ds, prelude::*};
-use serde::Deserialize;
-use sqlx::{AssertSqlSafe, FromRow};
-use std::{collections::HashMap, error::Error};
+// #[cfg(feature = "pg_ds")]
+// use ogc_cql2::gen_pg_ds;
+// #[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
+// use ogc_cql2::prelude::*;
+use ogc_cql2::prelude::*;
 
+#[cfg(feature = "csv_ds")]
 const PLACES_CSV: &str = "./tests/samples/data/ne_110m_populated_places_simple.csv";
+#[cfg(any(feature = "gpkg_ds", feature = "pg_ds"))]
 const PLACES_TBL: &str = "ne_110m_populated_places_simple";
 
-#[allow(dead_code)]
+#[cfg(feature = "csv_ds")]
+#[derive(Debug, Default, serde::Deserialize)]
 #[rustfmt::skip]
-#[derive(Debug, Default, Deserialize)]
+#[allow(dead_code)]
 pub(crate) struct ZPlace {
     /*  0 */ fid: i32,
     /*  1 */ geom: String,
@@ -46,7 +50,8 @@ pub(crate) struct ZPlace {
     /* 22 */ boolean: Option<u8>,
 }
 
-impl fmt::Display for ZPlace {
+#[cfg(feature = "csv_ds")]
+impl core::fmt::Display for ZPlace {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -66,11 +71,12 @@ impl fmt::Display for ZPlace {
 }
 
 /// Conversion logic to map a [ZPlace] instance to a [Resource].
+#[cfg(feature = "csv_ds")]
 impl TryFrom<ZPlace> for Resource {
     type Error = MyError;
 
     fn try_from(value: ZPlace) -> Result<Self, Self::Error> {
-        let mut map = HashMap::from([
+        let mut map = std::collections::HashMap::from([
             ("fid".into(), Q::try_from(value.fid)?),
             ("geom".into(), Q::try_from_wkt(&value.geom)?),
             ("name".into(), Q::new_plain_str(&value.name)),
@@ -102,8 +108,9 @@ impl TryFrom<ZPlace> for Resource {
 }
 
 /// Conversion logic to map a generic [StringRecord] instance to a [ZPlace].
+#[cfg(feature = "csv_ds")]
 impl TryFrom<StringRecord> for ZPlace {
-    type Error = Box<dyn Error>;
+    type Error = Box<dyn std::error::Error>;
 
     fn try_from(value: StringRecord) -> Result<Self, Self::Error> {
         let fid = value.get(0).expect("Missing 'fid'").parse::<i32>()?;
@@ -150,10 +157,12 @@ impl TryFrom<StringRecord> for ZPlace {
     }
 }
 
+#[cfg(feature = "csv_ds")]
 gen_csv_ds!(pub(crate), "Place", PLACES_CSV, ZPlace);
 
 /// Read all _Simple Places_ CSV test data-set rows, convert each to a
 /// [Resource] and return the lot.
+#[cfg(feature = "csv_ds")]
 pub(crate) fn places() -> Result<Vec<Resource>, MyError> {
     let csv = PlaceCSV::new();
     let mut result = vec![];
@@ -168,7 +177,8 @@ pub(crate) fn places() -> Result<Vec<Resource>, MyError> {
 
 // ============================================================================
 
-#[derive(Debug, FromRow)]
+#[cfg(feature = "gpkg_ds")]
+#[derive(Debug, sqlx::prelude::FromRow)]
 pub(crate) struct TPlace {
     fid: i32,
     geom: Vec<u8>,
@@ -183,11 +193,12 @@ pub(crate) struct TPlace {
     boolean: Option<bool>,
 }
 
+#[cfg(feature = "gpkg_ds")]
 impl TryFrom<TPlace> for Resource {
     type Error = MyError;
 
     fn try_from(value: TPlace) -> Result<Self, Self::Error> {
-        let mut map = HashMap::from([
+        let mut map = std::collections::HashMap::from([
             ("fid".into(), Q::try_from(value.fid)?),
             ("geom".into(), Q::try_from_wkb(&value.geom)?),
             ("name".into(), Q::new_plain_str(&value.name)),
@@ -217,17 +228,19 @@ impl TryFrom<TPlace> for Resource {
     }
 }
 
+#[cfg(feature = "gpkg_ds")]
 gen_gpkg_ds!(
     pub(crate),
     "Place",
-    GPKG_URL,
+    super::GPKG_URL,
     PLACES_TBL,
     TPlace
 );
 
 // ============================================================================
 
-#[derive(Debug, Default, FromRow)]
+#[cfg(feature = "pg_ds")]
+#[derive(Debug, Default, sqlx::prelude::FromRow)]
 pub(crate) struct LPlace {
     fid: i32,
     name: String,
@@ -242,6 +255,7 @@ pub(crate) struct LPlace {
     geom: G,
 }
 
+#[cfg(feature = "pg_ds")]
 impl TryFrom<LPlace> for Resource {
     type Error = MyError;
 
@@ -254,7 +268,7 @@ impl TryFrom<LPlace> for Resource {
         let pop_min = f64::try_from(pop_min_u32).expect("Failed u32 -> f64");
         let pop_other_u32 = u32::try_from(value.pop_other).expect("Failed i64 -> u32)");
         let pop_other = f64::try_from(pop_other_u32).expect("Failed u32 -> f64");
-        let mut map = HashMap::from([
+        let mut map = std::collections::HashMap::from([
             ("fid".into(), Q::try_from(value.fid)?),
             ("name".into(), Q::new_plain_str(&value.name)),
             ("nameascii".into(), Q::new_plain_str(&value.nameascii)),
@@ -281,15 +295,17 @@ impl TryFrom<LPlace> for Resource {
     }
 }
 
-gen_pg_ds!(pub(crate), "Place", PG_DB_NAME, PLACES_TBL, LPlace);
+#[cfg(feature = "pg_ds")]
+gen_pg_ds!(pub(crate), "Place", super::PG_DB_NAME, PLACES_TBL, LPlace);
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use jiff::{civil::date, tz::TimeZone};
-    use ogc_cql2::{G, GTrait};
-    use sqlx::{PgPool, any::install_default_drivers, postgres::PgConnectOptions};
+    // #[cfg(any(feature = "gpkg_ds", feature = "pg_ds"))]
+    // use sqlx::{PgPool, postgres::PgConnectOptions};
+    #[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
+    use std::error::Error;
 
+    #[cfg(any(feature = "gpkg_ds", feature = "pg_ds"))]
     #[rustfmt::skip]
     const PREDICATES: [(&str, u32); 36] = [
         (r#"name IS NOT NULL"#,  243),  // 0
@@ -334,15 +350,19 @@ mod tests {
         (r#"boolean=false"#,       1),  // 35
     ];
 
+    #[cfg(feature = "csv_ds")]
     #[test]
     fn test_iter() -> Result<(), Box<dyn Error>> {
+        use crate::utils::PlaceCSV;
+        use ogc_cql2::prelude::*;
+
         let csv = PlaceCSV::new();
         let (mut count, mut count_temporals) = (0, 0);
         for x in csv.iter()? {
             let place = x?;
             count += 1;
             // all geometries are valid points...
-            let g = G::try_from(place.geom.as_str())?;
+            let g = ogc_cql2::G::try_from(place.geom.as_str())?;
             assert_eq!(g.type_(), "Point");
 
             // all 3 temporal fields are present or not together...
@@ -363,9 +383,14 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(feature = "gpkg_ds")]
     #[tokio::test]
     async fn test_fetch() -> Result<(), Box<dyn Error>> {
-        install_default_drivers();
+        use crate::utils::PlaceGPkg;
+        use futures::TryStreamExt;
+        use ogc_cql2::prelude::*;
+
+        sqlx::any::install_default_drivers();
 
         let (mut count, mut count_temporals) = (0, 0);
         let gpkg = PlaceGPkg::new().await?;
@@ -374,7 +399,7 @@ mod tests {
             count += 1;
             // all geometries are valid points...
             let wkb: &[u8] = &p.geom;
-            let g = G::try_from(wkb)?;
+            let g = ogc_cql2::G::try_from(wkb)?;
             assert_eq!(g.type_(), "Point");
 
             // all 3 temporal fields are present or not together...
@@ -395,9 +420,14 @@ mod tests {
         Ok(())
     }
 
+    #[cfg(feature = "gpkg_ds")]
     #[tokio::test]
     async fn test_stream() -> Result<(), Box<dyn Error>> {
-        install_default_drivers();
+        use crate::utils::PlaceGPkg;
+        use futures::TryStreamExt;
+        use ogc_cql2::prelude::*;
+
+        sqlx::any::install_default_drivers();
 
         let (mut count, mut count_temporals) = (0, 0);
         let gpkg = PlaceGPkg::new().await?;
@@ -428,7 +458,13 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "gpkg_ds")]
     async fn test_sql() -> Result<(), Box<dyn Error>> {
+        use crate::utils::PlaceGPkg;
+        use futures::TryStreamExt;
+        use ogc_cql2::Expression;
+        use ogc_cql2::prelude::*;
+
         let gpkg = PlaceGPkg::new().await?;
         // use the 'stream_where()' entry point -> TPlace...
         for (ndx, (filter, expected)) in PREDICATES.iter().enumerate() {
@@ -444,7 +480,13 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "pg_ds")]
     async fn test_pg() -> Result<(), Box<dyn Error>> {
+        use crate::utils::PlacePG;
+        use futures::TryStreamExt;
+        use jiff::{civil::date, tz::TimeZone};
+        use ogc_cql2::prelude::*;
+
         // there are 3 non-trivial dates in the set: 2021-04-16, and for the
         // month and day but for the following 2 years.
         let dates = vec![
@@ -514,7 +556,13 @@ mod tests {
 
     #[tokio::test]
     #[tracing_test::traced_test]
+    #[cfg(feature = "pg_ds")]
     async fn test_pg_sql() -> Result<(), Box<dyn Error>> {
+        use crate::utils::PlacePG;
+        use futures::TryStreamExt;
+        use ogc_cql2::Expression;
+        use ogc_cql2::prelude::*;
+
         let ds = PlacePG::new().await?;
         // use the 'stream_where()' entry point -> LPlace...
         for (ndx, (filter, expected)) in PREDICATES.iter().enumerate() {
@@ -530,7 +578,13 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg(feature = "pg_ds")]
     async fn test_pg_sql_timestamp() -> Result<(), Box<dyn Error>> {
+        use crate::utils::PlacePG;
+        use futures::TryStreamExt;
+        use ogc_cql2::Expression;
+        use ogc_cql2::prelude::*;
+
         #[rustfmt::skip]
         const PREDICATES: [(&str, u32); 6] = [
             // (r#"name='København'"#, 1),
@@ -558,7 +612,11 @@ mod tests {
     // test to ensure timestamp columns correctly reflect the same value as
     // the one encoded in the GeoPackage table...
     #[tokio::test]
+    #[cfg(feature = "pg_ds")]
     async fn test_pg_timestamp_column() -> Result<(), Box<dyn Error>> {
+        use crate::utils::PG_DB_NAME;
+        use sqlx::{PgPool, postgres::PgConnectOptions};
+
         const WHERE: &str = r#""start" = '2022-04-16T10:13:19';"#;
 
         let pg_url = dotenvy::var("PG_URL")?;
@@ -567,7 +625,7 @@ mod tests {
         let pool = PgPool::connect_with(pool_opts).await?;
 
         let sql = format!(r#"SELECT * FROM "ne_110m_populated_places_simple" WHERE {WHERE}"#);
-        let safe_sql = AssertSqlSafe(sql);
+        let safe_sql = sqlx::AssertSqlSafe(sql);
         let rows = sqlx::query(safe_sql).fetch_all(&pool).await?;
         let len = rows.len();
         tracing::debug!("-- found {len} row(s)");

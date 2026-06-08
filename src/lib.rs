@@ -53,47 +53,52 @@
 //! here is essentially a _Map_ of property names (i.e. strings) to [queryable][Q]
 //! values. More on that later.
 //!
-//! This library represents those objects by the [`Evaluator`] trait. A simple
-//! example of an implementation of this trait is provided --see [`ExEvaluator`].
+//! This library filters those [Resources][Resource] with objects that implement the
+//! [`Evaluator`] trait. A simple example of an implementation of this trait is provided
+//! --see [`ExEvaluator`].
 //!
 //! In an earlier incarnation an [`Evaluator`] used to have a `teardown()` hook.
 //! Not anymore. Rust's [`Drop` trait](https://doc.rust-lang.org/std/ops/trait.Drop.html)
-//! sort of makes that method superfluous.
+//! makes that method superfluous.
 //!
 //! # Data sources
 //!
 //! Data sources represent providers of data to be processed by [`Evaluator`]s to
-//! filter (i.e. include or exclude) items based on the result of [`Expression`]s.
+//! filter (i.e. include or exclude) resources based on the result of [`Expression`]s.
 //!
 //! The [`DataSource`] (marker) trait represents those objects. Currently the
-//! library provides two implementations: [`CSVDataSource`] and [`GPkgDataSource`].
-//! The first represents _Comma Separated Values_ (CSV) sourced from tabular data
-//! where each row is mapped to a _Feature_ containing one geometry (spatial)
-//! property and other non-geometry attributes. The second represents [GeoPackage][gpkg]
-//! files. A _GeoPackage_ is
+//! library provides three implementations: [`CSVDataSource`], [`GPkgDataSource`],
+//! and [`PGDataSource`].  The first represents _Comma Separated Values_ (CSV) sourced
+//! from tabular data where each row is mapped to a _Feature_ containing one geometry
+//! (spatial) property and other non-geometry attributes. The second represents
+//! [GeoPackage][gpkg] files. A _GeoPackage_ is
 //! > ... _an open, standards-based, platform-independent, portable,
-//! > self-describing, compact format for transferring geospatial information.
+//! > self-describing, cocurrentlympact format for transferring geospatial information.
 //! > It is a platform-independent SQLite database file_...
 //!
+//! The third [`PGDataSource`] allows processing [_PostGIS_](https://postgis.net/) enabled
+//! [_PostgreSQL_](https://www.postgresql.org/) tables.
+//!
 //! Coding concrete implementations of those data source traits is facilitated
-//! by the library providing two macros: [gen_csv_ds!] and [gen_gpkg_ds!]. The
-//! first for the _CSV_ variety while the second for the _GeoPackage_ one.
+//! by the library macros: [gen_csv_ds!], [gen_gpkg_ds!], and [gen_pg_ds!] for the three
+//! supported [`DataSource`] implementations.
 //!
-//! I intend to provide two additional implementations: one for [ESRI
-//! Shapefiles][shapefile] and another for [PostGIS enabled tables][pgis].
+//! # GIS Features and Resources
 //!
-//! # Features and Resources
-//!
-//! I frequently mention the term _Feature_ in the documentation to refer to
-//! an abstract type that closely relates to its data source. For a CSV data
-//! source, it's a structure that is `serde` deserializable. For example, in the
-//! `tests/samples/data` folder, a CSV file named `ne_110m_rivers_lake_centerlines`
-//! representing one of the 3 data sets referred to in the standard for testing
-//! compliance is provided. The _Feature_ for that data source looks like this:
+//! I frequently mention the term _GIS Feature_ in the documentation to refer
+//! to an abstract GIS type that closely relates to its data source, as opposed
+//! to a Rust _Conditional Compilation Feature_, or simply _Feature_. For a CSV
+//! data source, a _GIS Feature_ is a structure that is [`serde`](https://serde.rs/)
+//! deserializable.
+//! For example, in the `tests/samples/data` folder, a CSV file named
+//! `ne_110m_rivers_lake_centerlines` representing one of the 3 data sets
+//! referred to in the standard for testing compliance is provided. The _GIS
+//! Feature_ for that data source looks like this:
 //! ```rust
 //! use serde::Deserialize;
 //! use std::marker::PhantomData;
 //!
+//! #[cfg(feature = "csv_ds")]
 //! #[derive(Debug, Default, Deserialize)]
 //! pub(crate) struct ZRiver {
 //!     /* 0 */ fid: i32,
@@ -105,14 +110,12 @@
 //! This makes sense b/c the [csv crate](https://crates.io/crates/csv) used for
 //! reading the _CSV_ data works smoothly with deserializable structures.
 //! Worth noting here that the spatial data (the `geom` field) is expected to
-//! be encoded as WKT (Well Known Text).
+//! be encoded as [WKT (Well Known Text)](https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry).
 //!
-//! When dealing w/ a _GeoPackage_ version of the same data uses this
-//! structure:
+//! When dealing w/ a _GeoPackage_ version of the same data, this structure is used:
 //! ```rust
-//! use sqlx::FromRow;
-//!
-//! #[derive(Debug, FromRow)]
+//! #[cfg(feature = "gpkg_ds")]
+//! #[derive(Debug, sqlx::FromRow)]
 //! pub(crate) struct TRiver {
 //!     fid: i32,
 //!     geom: Vec<u8>,
@@ -124,27 +127,46 @@
 //! `geom` spatial attribute is now expected to be a byte array containing the
 //! WKB (Well Known Binary) encoded value of the vector geometry.
 //!
-//! Finally on that note, a _Feature_ implementation must provide a way of
-//! converting an instance of `Self` to a [`Resource`]. Here it is for the
-//! above _rivers_ CSV version:
+//! Similarly, when dealing w/ a _PostGIS_ version of the same data, this structure
+//! is used:
+//!
 //! ```rust
 //! use ogc_cql2::prelude::*;
-//! use std::error::Error;
+//!
+//! #[cfg(feature = "pg_ds")]
+//! #[derive(Debug, sqlx::FromRow)]
+//! pub(crate) struct LRiver {
+//!     fid: i32,
+//!     name: String,
+//!     geom: G,
+//! }
+//!
+//! ```
+//!
+//! Finally on that note, a _GIS Feature_ implementation must provide a way of
+//! converting an instance of `Self` to a [`Resource`]. Here it is for the
+//! above _rivers_ CSV version, when feature `csv_ds` is activated:
+//!
+//! ```rust
+//! # use ogc_cql2::prelude::*;
+//! # use std::{collections::HashMap, error::Error, marker::PhantomData};
 //! # use serde::Deserialize;
-//! # use std::marker::PhantomData;
-//! # use std::collections::HashMap;
+//! #
 //! # #[derive(Debug, Default, Deserialize)]
-//! # pub(crate) struct ZRiver {
+//! # struct ZRiver {
 //! #    /* 0 */ fid: i32,
 //! #    /* 1 */ geom: String,
 //! #    /* 2 */ name: String,
 //! #    #[serde(skip)] ignored: PhantomData<String>
 //! # }
 //!
+//! #[cfg(feature = "csv_ds")]
 //! impl TryFrom<ZRiver> for Resource {
 //!     type Error = MyError;
 //!
 //!     fn try_from(value: ZRiver) -> Result<Self, Self::Error> {
+//!         use ogc_cql2::prelude::*;
+//!
 //!         Ok(HashMap::from([
 //!             ("fid".into(), Q::try_from(value.fid)?),
 //!             ("geom".into(), Q::try_from_wkt(&value.geom)?),
@@ -174,6 +196,7 @@
 //!
 //! Considering that the [`CSVDataSource`] related macro [`gen_csv_ds!`] does
 //! exactly that, one can easily write something like this...
+//!
 //! ```rust
 //! use ogc_cql2::prelude::*;
 //! use std::error::Error;
@@ -182,7 +205,7 @@
 //! # use serde::Deserialize;
 //! # use std::marker::PhantomData;
 //! # #[derive(Debug, Default, Deserialize)]
-//! # pub(crate) struct ZRiver {
+//! # struct ZRiver {
 //! #    /* 0 */ fid: i32,
 //! #    /* 1 */ geom: String,
 //! #    /* 2 */ name: String,
@@ -200,10 +223,11 @@
 //! #    }
 //! # }
 //!
+//! # #[cfg(feature = "csv_ds")]
+//! # fn test() -> Result<(), Box<dyn Error>> {
 //! // somewhere the macro is invoked to generate module-private artifacts...
 //! gen_csv_ds!(pub(crate), "River", "...ne_110m_rivers_lake_centerlines.csv", ZRiver);
 //!
-//! # fn test() -> Result<(), Box<dyn Error>> {
 //! // now we collect all the "rivers" in the collection...
 //! let csv = RiverCSV::new();
 //! let it: Result<Vec<ZRiver>, MyError> = csv.iter()?.collect();
@@ -221,20 +245,23 @@
 //! file, and _PostGIS_ DB tables, etc...
 //!
 //! Similar to the CSV data source, the [`gen_gpkg_ds!`] macro does the heavy
-//! lifting generating the necessary artifcats for a _GeoPackage_ data source.
+//! lifting generating the necessary artifcats for a _GeoPackage_ data-source.
+//! As does the [`gen_pg_ds!`] macro for a _PostGIS_ data-source.
 //!
 //!
 //! # Relative performance
 //!
 //! With the introduction of the [`DataSource`], [`IterableDS`] and [`StreamableDS`]
-//! traits and the provided _CSV_ and _GeoPackage_ implementations, a User can
+//! traits and the provided [`DataSource`] implementations, a User can
 //! effectively process the data in 3 ways:
 //!
 //! * as _Features_ using the [`IterableDS`] trait --from a _CSV_ table.
-//! * as either _Features_ or [Resource]s using the [`StreamableDS`] trait through
+//! * as either _Features_ or [`Resource`]s using the [`StreamableDS`] trait through
 //!   the `fetch()` or `stream()` hooks --from a _GeoPackage_ database file,
+//!   or a _PostGIS_ layer,
 //! * as _Features_ or [`Resource`]s using the [`StreamableDS`] trait through the
-//!   `fetch_where()` or `stream_where()` hooks --from a _GeoPackage_ DB.
+//!   `fetch_where()` or `stream_where()` hooks --from a _GeoPackage_ DB or a
+//!   _PostGIS_ layer.
 //!
 //! The last approach is by far the most effective since it delegates to a
 //! DB engine the job of filtering the records, while the 2<sup>nd</sup> one
@@ -245,18 +272,14 @@
 //! As an example of relative performance of those approaches, consider the
 //! timing of `test_points`, `test_points_gpkg` and `test_points_sql` in
 //! `a9::test_37` which correspond to those 3 strategies respectively when
-//! processing a data set of 243 records. On my development laptop, w/ the
-//! `profile [unoptimized + debuginfo]` i get...
+//! processing a data set of 243 records. On a 4×Intel® Core™ i7-3610QM CPU
+//! @ 2.30GHz laptop, w/ the `profile [unoptimized + debuginfo]` I get...
 //!
-//! ```text
-//! +---+--------------------+-------+
-//! | # | test               | time  |
-//! +---+--------------------+-------+
-//! | 1 | test_points()      | 0.10s |
-//! | 2 | test_points_gpkg() | 5.91s |
-//! | 3 | test_points_sql()  | 0.08s |
-//! +---+--------------------+-------+
-//! ```
+//! | # | test                 | time  |
+//! |---|----------------------|-------|
+//! | 1 | `test_points()`      | 0.09s |
+//! | 2 | `test_points_gpkg()` | 5.35s |
+//! | 3 | `test_points_sql()`  | 0.11s |
 //!
 //!
 //! # Third-party crates
@@ -285,6 +308,17 @@
 //! 5. CRS Transformation:
 //!    * [proj][9]: for coordinate transformation via bindings to the [PROJ][10]
 //!      API.
+//!
+//! # Rust (conditional compliation) Features
+//!
+//! This project currently allows users the ability to process GIS data
+//! provided by different data-source types, gated by the following features:
+//!
+//! | Feature   | Data Source                                         |
+//! |-----------|-----------------------------------------------------|
+//! | `csv_ds`  | Comma Separated Values (CSV) textual data.<br/>Geometry columns are Well Known Text (WKT) strings.<br/>Properties are formatted strings. |
+//! | `gpkg_ds` | _GeoPackage_ data.<br/>Geometry columns are Well Known Binary (WKB) bytes.<br/>Properties are standard SQLite types. |
+//! | `pg_ds`   | _PostGIS_ tables.<br/>Geometry columns are Well Known Binary (WKB) bytes.<br/>Properties are standard PostgreSQL types. |
 //!
 //!
 //! [1]: https://crates.io/crates/geos
@@ -374,6 +408,7 @@ impl Expression {
     }
 
     // convert both variants to the common `E` intermediary form.
+    #[allow(dead_code)]
     pub(crate) fn to_inner(&self) -> Result<E, MyError> {
         match self {
             Expression::Text(x) => Ok(x.0.to_owned()),
@@ -409,7 +444,7 @@ pub struct JsonEncoded(json::Expression);
 /// Possible outcome values when evaluating an [`Expression`] against an
 /// individual [`Resource`] from a collection.
 ///
-/// From [OGC CQL2][1]:
+/// From [OGC CQL2](https://docs.ogc.org/is/21-065r2/21-065r2.html):
 /// > _Each resource instance in the source collection is evaluated against
 /// > a filtering expression. The net effect of evaluating a filter
 /// > [`Expression`] is a subset of resources that satisfy the predicate(s)
@@ -417,10 +452,9 @@ pub struct JsonEncoded(json::Expression);
 ///
 /// Logically connected predicates are evaluated according to the following
 /// truth table, where `T` is TRUE, `F` is FALSE and `N` is NULL.
-/// ```text
-/// +-----+-----+---------+---------+
-/// | P1  | P2  | P1 & P2 | P1 | P2 |
-/// +-----+-----+---------+---------+
+///
+/// | P1  | P2  | P1 & P2 | P1 &#124; P2 |
+/// |-----|-----|:-------:|:-------:|
 /// |  T  |  T  |    T    |    T    |
 /// |  T  |  F  |    F    |    T    |
 /// |  F  |  T  |    F    |    T    |
@@ -430,9 +464,6 @@ pub struct JsonEncoded(json::Expression);
 /// |  N  |  T  |    N    |    T    |
 /// |  N  |  F  |    F    |    N    |
 /// |  N  |  N  |    N    |    N    |
-/// +-----+-----+---------+---------+
-/// ```
-/// [1]: https://docs.ogc.org/is/21-065r2/21-065r2.html
 #[derive(Debug, PartialEq, Eq)]
 pub enum Outcome {
     /// The input satisfies the [Expression] and should be marked as being in

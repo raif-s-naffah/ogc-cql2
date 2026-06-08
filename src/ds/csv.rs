@@ -5,21 +5,21 @@
 //! Geospatial data stored in CSV files.
 //!
 
-use crate::ds::DataSource;
-use std::path::PathBuf;
-
-/// [`DataSource`] of _Features_ and [Resources][crate::Resource] mapped from CSV rows/records.
+/// [`DataSource`][crate::DataSource] of _Features_ and [Resources][crate::Resource] mapped from CSV rows/records.
+#[cfg(feature = "csv_ds")]
 #[derive(Debug)]
 pub struct CSVDataSource {
-    path: PathBuf,
+    path: std::path::PathBuf,
 }
 
-impl DataSource for CSVDataSource {
+#[cfg(feature = "csv_ds")]
+impl super::DataSource for CSVDataSource {
     fn srid(&self) -> Option<u32> {
         None
     }
 }
 
+#[cfg(feature = "csv_ds")]
 impl CSVDataSource {
     /// Constructor given the file system location of an accessible CSV file.
     pub fn from(s: &str) -> Self {
@@ -27,7 +27,7 @@ impl CSVDataSource {
     }
 
     /// Return this CSV data source path.
-    pub fn path(&self) -> &PathBuf {
+    pub fn path(&self) -> &std::path::PathBuf {
         &self.path
     }
 }
@@ -46,12 +46,12 @@ macro_rules! gen_csv_ds {
         ::paste::paste! {
             /// Concrete data source.
             #[derive(Debug)]
-            $vis struct [<$name CSV>](CSVDataSource);
+            $vis struct [<$name CSV>](::ogc_cql2::CSVDataSource);
 
             impl [<$name CSV>] {
                 /// Construct a new CSV data source.
                 $vis fn new() -> Self {
-                    Self(CSVDataSource::from($path))
+                    Self(::ogc_cql2::CSVDataSource::from($path))
                 }
 
                 /// Return a file reader that deserializes rows into features.
@@ -67,7 +67,7 @@ macro_rules! gen_csv_ds {
                 }
             }
 
-            impl IterableDS for [<$name CSV>] {
+            impl ::ogc_cql2::IterableDS for [<$name CSV>] {
                 type Item = $feature;
                 type Err = MyError;
 

@@ -20,11 +20,10 @@
 //! [1]: <https://docs.ogc.org/is/21-065r2/21-065r2.html#test-data-predicates-basic-cql2-combinations>
 //!
 
-use crate::utils::{PlaceGPkg, PlacePG, places};
-use futures::TryStreamExt;
-use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome, StreamableDS};
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 use std::error::Error;
 
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 #[rustfmt::skip]
 const PREDICATES: [(&str, &str, &str, &str, u32); 83] = [
     (r#"pop_other<>1038288"#,                       r#"name<>'København'"#,
@@ -195,8 +194,12 @@ const PREDICATES: [(&str, &str, &str, &str, u32); 83] = [
      r#"start=TIMESTAMP('2022-04-16T10:13:19Z')"#,  r#"boolean=true"#, 44)
 ];
 
+#[cfg(any(feature = "csv_ds"))]
 #[test]
 fn test() -> Result<(), Box<dyn Error>> {
+    use crate::utils::places;
+    use ogc_cql2::prelude::*;
+
     let features = places()?;
     let shared_ctx = Context::new().freeze();
     for (ndx, (p1, p2, p3, p4, expected)) in PREDICATES.iter().enumerate() {
@@ -223,8 +226,13 @@ fn test() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[cfg(any(feature = "gpkg_ds"))]
 #[tokio::test]
 async fn test_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::PlaceGPkg;
+    use futures::TryStreamExt;
+    use ogc_cql2::prelude::*;
+
     let ds = PlaceGPkg::new().await?;
     for (ndx, (p1, p2, p3, p4, expected)) in PREDICATES.iter().enumerate() {
         let input = format!("(NOT ({p2}) AND {p1}) OR ({p3} and {p4}) or not ({p1} OR {p4})");
@@ -241,9 +249,14 @@ async fn test_sql() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[cfg(any(feature = "pg_ds"))]
 #[tokio::test]
 #[ignore = "Works but painfully sloooow :("]
 async fn test_pg_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::PlacePG;
+    use futures::TryStreamExt;
+    use ogc_cql2::prelude::*;
+
     let ds = PlacePG::new().await?;
     for (ndx, (p1, p2, p3, p4, expected)) in PREDICATES.iter().enumerate() {
         let input = format!("(NOT ({p2}) AND {p1}) OR ({p3} and {p4}) or not ({p1} OR {p4})");

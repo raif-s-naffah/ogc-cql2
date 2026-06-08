@@ -18,10 +18,11 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{CountryCSV, CountryGPkg, CountryPG, harness, harness_gpkg, harness_sql};
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 use std::error::Error;
 
 // Countries data set contains 177 records...
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 #[rustfmt::skip]
 const PREDICATES: [(&str, u32); 4] = [
     ("S_WITHIN(geom,BBOX(-180,-90,180,90))",                               177),
@@ -30,26 +31,38 @@ const PREDICATES: [(&str, u32); 4] = [
     ("S_WITHIN(geom,MULTIPOINT((7 50),(10 51)))",                            0),
 ];
 
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryCSV, harness};
+
     let ds = CountryCSV::new();
     harness(ds, &PREDICATES)
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryGPkg, harness_gpkg};
+
     let ds = CountryGPkg::new().await?;
     harness_gpkg(ds, &PREDICATES).await
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryGPkg, harness_sql};
+
     let ds = CountryGPkg::new().await?;
     harness_sql(ds, &PREDICATES).await
 }
 
+#[cfg(feature = "pg_ds")]
 #[tokio::test]
 async fn test_pg_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryPG, harness_sql};
+
     let ds = CountryPG::new().await?;
     harness_sql(ds, &PREDICATES).await
 }

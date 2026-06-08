@@ -4,13 +4,28 @@
 //! Expressions, Data Sources, and expected correct response(s).
 //!
 
-mod country;
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
+pub mod country;
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 mod place;
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 mod river;
 
-pub(crate) use country::{CountryCSV, CountryGPkg, CountryPG, countries, countries_gpkg};
-pub(crate) use place::{PlaceCSV, PlaceGPkg, PlacePG, places};
-pub(crate) use river::{RiverCSV, RiverGPkg, RiverPG};
+#[cfg(feature = "pg_ds")]
+pub(crate) use {country::CountryPG, place::PlacePG, river::RiverPG};
+#[cfg(feature = "csv_ds")]
+pub(crate) use {
+    country::{CountryCSV, countries},
+    place::{PlaceCSV, places},
+    // river::{RiverCSV, rivers},
+    river::RiverCSV,
+};
+#[cfg(feature = "gpkg_ds")]
+pub(crate) use {
+    country::{CountryGPkg, countries_gpkg},
+    place::PlaceGPkg,
+    river::RiverGPkg,
+};
 
 use futures::TryStreamExt;
 use ogc_cql2::{
@@ -26,7 +41,9 @@ use rand::{
 };
 use std::error::Error;
 
+#[cfg(feature = "gpkg_ds")]
 const GPKG_URL: &str = "sqlite:tests/samples/data/ne110m4cql2.gpkg";
+#[cfg(feature = "pg_ds")]
 const PG_DB_NAME: &str = "cql2";
 
 // Process the records of a named CSV data source, evaluating for each a
@@ -35,6 +52,7 @@ const PG_DB_NAME: &str = "cql2";
 //
 // The test passes if the actual count of correct responses matches a given
 // expected value and fails otherwise.
+#[allow(dead_code)]
 pub(crate) fn harness<T: IterableDS<Err = MyError>>(
     ds: T,
     predicates: &[(&str, u32)],
@@ -91,6 +109,7 @@ where
 }
 
 // similar to the iterable version but uses async streaming...
+#[allow(dead_code)]
 pub(crate) async fn harness_gpkg<T: StreamableDS<Err = MyError>>(
     ds: T,
     predicates: &[(&str, u32)],
@@ -137,6 +156,7 @@ pub(crate) async fn harness_gpkg<T: StreamableDS<Err = MyError>>(
 // the real McKoy! for GeoPackage (and future PostGIS) data sources.  delegates
 // the filtering to the DB engine through a SELECT w/ a WHERE clause built from
 // the CQL2 expression...
+#[allow(dead_code)]
 pub(crate) async fn harness_sql<T: StreamableDS<Err = MyError>>(
     ds: T,
     predicates: &[(&str, u32)],

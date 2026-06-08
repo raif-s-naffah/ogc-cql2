@@ -159,6 +159,7 @@ impl Op {
         matches!(self, Op::IsNull | Op::IsNotNull)
     }
 
+    #[cfg(any(feature = "gpkg_ds", feature = "pg_ds"))]
     #[rustfmt::skip]
     pub(crate) fn to_sql(&self) -> &str {
         match self {

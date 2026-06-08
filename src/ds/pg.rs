@@ -46,6 +46,7 @@ pub(crate) struct TGeometryColumn {
 
 /// [`DataSource`] binding a _PostGIS_ enabled database + a table name that
 /// maps rows to _Features_ and [Resources][crate::Resource].
+#[cfg(feature = "pg_ds")]
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct PGDataSource {
@@ -55,12 +56,14 @@ pub struct PGDataSource {
     srid: u32,
 }
 
+#[cfg(feature = "pg_ds")]
 impl DataSource for PGDataSource {
     fn srid(&self) -> Option<u32> {
         Some(self.srid)
     }
 }
 
+#[cfg(feature = "pg_ds")]
 impl PGDataSource {
     /// Constructor.
     pub async fn from(db_name: &str, table: &str) -> Result<Self, MyError> {
@@ -633,17 +636,17 @@ macro_rules! gen_pg_ds {
     ($vis:vis, $name:expr, $db_url:expr, $table:expr, $feature:expr) => {
         ::paste::paste! {
             /// Concrete PostgreSQL+PostGIS source.
-            $vis struct [<$name PG>](PGDataSource);
+            $vis struct [<$name PG>](::ogc_cql2::PGDataSource);
 
             impl [<$name PG>] {
                 /// Constructor.
                 $vis async fn new() -> Result<Self, MyError> {
-                    let ds = PGDataSource::from($db_url, $table).await?;
+                    let ds = ::ogc_cql2::PGDataSource::from($db_url, $table).await?;
                     Ok(Self(ds))
                 }
 
                 /// Convert a row (aka Feature) to a generic Resource.
-                $vis fn to_resource(r: $feature) -> Result<Resource, Box<dyn Error>> {
+                $vis fn to_resource(r: $feature) -> Result<Resource, Box<dyn std::error::Error>> {
                     let row = $feature::try_from(r)?;
                     Ok(Resource::try_from(row)?)
                 }
@@ -654,7 +657,7 @@ macro_rules! gen_pg_ds {
                 }
 
                 /// Return a reference to the inner model data source.
-                $vis fn inner(&self) -> &PGDataSource {
+                $vis fn inner(&self) -> &::ogc_cql2::PGDataSource {
                     &self.0
                 }
             }
@@ -666,7 +669,7 @@ macro_rules! gen_pg_ds {
             }
 
             #[::async_trait::async_trait]
-            impl StreamableDS for [<$name PG>] {
+            impl ::ogc_cql2::StreamableDS for [<$name PG>] {
                 type Item = $feature;
                 type Err = MyError;
 
@@ -698,7 +701,7 @@ macro_rules! gen_pg_ds {
 
                 async fn fetch_where(
                     &self,
-                    exp: &Expression,
+                    exp: &::ogc_cql2::Expression,
                 ) -> Result<::futures::stream::BoxStream<'_, Result<$feature, MyError>>, MyError> {
                     let where_clause = self.0.to_sql(exp)?;
                     let sql = format!(r#"SELECT * FROM "{}" WHERE {};"#, self.table(), where_clause);
@@ -712,7 +715,7 @@ macro_rules! gen_pg_ds {
 
                 async fn stream_where(
                     &self,
-                    exp: &Expression,
+                    exp: &::ogc_cql2::Expression,
                 ) -> Result<::futures::stream::BoxStream<'_, Result<Resource, MyError>>, MyError> {
                     let rows = self.fetch_where(exp).await?;
                     let resources = rows

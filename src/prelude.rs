@@ -21,4 +21,9 @@ pub use super::srid::*;
 pub use super::Expression;
 pub use super::Outcome;
 
-pub use super::{gen_csv_ds, gen_gpkg_ds, gen_pg_ds};
+#[cfg(feature = "csv_ds")]
+pub use super::{CSVDataSource, gen_csv_ds};
+#[cfg(feature = "gpkg_ds")]
+pub use super::{GPkgDataSource, gen_gpkg_ds};
+#[cfg(feature = "pg_ds")]
+pub use super::{PGDataSource, gen_pg_ds};

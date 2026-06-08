@@ -21,23 +21,26 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{CountryCSV, CountryGPkg, countries, countries_gpkg};
-use futures::TryStreamExt;
-use ogc_cql2::{
-    Context, Evaluator, ExEvaluator, Expression, IterableDS, Outcome, Q, Resource, StreamableDS,
-};
+use ogc_cql2::prelude::*;
 use std::error::Error;
 use tracing::error;
 
+#[allow(dead_code)]
 const LP1: &str = "NAME LIKE '%'";
+#[allow(dead_code)]
 const LP2: &str = "NAME like '_%'";
+#[allow(dead_code)]
 const LP3: &str = "NAME like ''";
+#[allow(dead_code)]
 const LP4: &str = "NAME like '%%'";
 const LP5: &str = "NAME like '\\%\\_'";
 
 // w/ LP1, any non-null input will match...
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test_outcome_1() -> Result<(), Box<dyn Error>> {
+    use crate::utils::countries;
+
     let shared_ctx = Context::new().freeze();
     let mut evaluator = ExEvaluator::new(shared_ctx.clone());
     let input = format!("{LP1}");
@@ -54,8 +57,11 @@ fn test_outcome_1() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_outcome_1_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::countries_gpkg;
+
     let shared_ctx = Context::new().freeze();
     let mut evaluator = ExEvaluator::new(shared_ctx.clone());
     let input = format!("{LP1}");
@@ -73,8 +79,11 @@ async fn test_outcome_1_gpkg() -> Result<(), Box<dyn Error>> {
 }
 
 // w/ LP2 empty strings will NOT match, while w/ LP3, only they will...
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test_outcome_2() -> Result<(), Box<dyn Error>> {
+    use crate::utils::CountryCSV;
+
     let shared_ctx = Context::new().freeze();
     let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
@@ -108,8 +117,12 @@ fn test_outcome_2() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_outcome_2_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::CountryGPkg;
+    use futures::TryStreamExt;
+
     let shared_ctx = Context::new().freeze();
     let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
@@ -143,8 +156,11 @@ async fn test_outcome_2_gpkg() -> Result<(), Box<dyn Error>> {
 }
 
 // LP1 and LP4 yield the same results...
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test_outcome_3() -> Result<(), Box<dyn Error>> {
+    use crate::utils::countries;
+
     let shared_ctx = Context::new().freeze();
     let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());
@@ -167,8 +183,11 @@ fn test_outcome_3() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_outcome_3_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::countries_gpkg;
+
     let shared_ctx = Context::new().freeze();
     let mut evaluator1 = ExEvaluator::new(shared_ctx.clone());
     let mut evaluator2 = ExEvaluator::new(shared_ctx.clone());

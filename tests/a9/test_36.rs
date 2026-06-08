@@ -20,14 +20,11 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{
-    CountryCSV, CountryGPkg, CountryPG, countries, countries_gpkg, harness, harness_gpkg,
-    harness_sql,
-};
-use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome};
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 use std::error::Error;
 
 // Countries data set contains 177 records...
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 #[rustfmt::skip]
 const CONTAINS: [(&str, u32); 4] = [
     ("S_CONTAINS(geom,BBOX(-180,-90,180,90))",                               0),
@@ -36,62 +33,92 @@ const CONTAINS: [(&str, u32); 4] = [
     ("S_CONTAINS(geom,MULTIPOINT((7 50),(10 51)))",                          1),
 ];
 
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 #[rustfmt::skip]
 const WITHIN: [(&str, u32); 2] = [
     ("S_WITHIN(geom,BBOX(-180,-90,180,90))",                               177),
     ("S_WITHIN(geom,POLYGON((-180 -90,180 -90,180 90,-180 90,-180 -90)))", 177),
 ];
 
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test_contains() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryCSV, harness};
+
     let ds = CountryCSV::new();
     harness(ds, &CONTAINS)
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_contains_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryGPkg, harness_gpkg};
+
     let ds = CountryGPkg::new().await?;
     harness_gpkg(ds, &CONTAINS).await
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_contains_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryGPkg, harness_sql};
+
     let ds = CountryGPkg::new().await?;
     harness_sql(ds, &CONTAINS).await
 }
 
+#[cfg(feature = "pg_ds")]
 #[tokio::test]
 async fn test_contains_pg_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryPG, harness_sql};
+
     let ds = CountryPG::new().await?;
     harness_sql(ds, &CONTAINS).await
 }
 
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test_within() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryCSV, harness};
+
     let ds = CountryCSV::new();
     harness(ds, &WITHIN)
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_within_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryGPkg, harness_gpkg};
+
     let ds = CountryGPkg::new().await?;
     harness_gpkg(ds, &WITHIN).await
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_within_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryGPkg, harness_sql};
+
     let ds = CountryGPkg::new().await?;
     harness_sql(ds, &WITHIN).await
 }
 
+#[cfg(feature = "pg_ds")]
 #[tokio::test]
 async fn test_within_pg_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryPG, harness_sql};
+
     let ds = CountryPG::new().await?;
     harness_sql(ds, &WITHIN).await
 }
 
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test_e3() -> Result<(), Box<dyn Error>> {
+    use crate::utils::countries;
+    // use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome};
+    use ogc_cql2::prelude::*;
+
     const E1: &str = "S_CONTAINS(geom,LINESTRING(7 50,10 51))";
     const E2: &str = "S_WITHIN(geom,LINESTRING(7 50,10 51))";
 
@@ -118,8 +145,13 @@ fn test_e3() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_e3_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::countries_gpkg;
+    // use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome};
+    use ogc_cql2::prelude::*;
+
     const E1: &str = "S_CONTAINS(geom,LINESTRING(7 50,10 51))";
     const E2: &str = "S_WITHIN(geom,LINESTRING(7 50,10 51))";
 
@@ -146,8 +178,13 @@ async fn test_e3_gpkg() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test_e4() -> Result<(), Box<dyn Error>> {
+    use crate::utils::countries;
+    // use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome};
+    use ogc_cql2::prelude::*;
+
     const E1: &str = "S_CONTAINS(geom,MULTIPOINT((7 50),(10 51)))";
     const E2: &str = "S_WITHIN(geom,MULTIPOINT((7 50),(10 51)))";
 
@@ -174,8 +211,13 @@ fn test_e4() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_e4_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::countries_gpkg;
+    // use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, Outcome};
+    use ogc_cql2::prelude::*;
+
     const E1: &str = "S_CONTAINS(geom,MULTIPOINT((7 50),(10 51)))";
     const E2: &str = "S_WITHIN(geom,MULTIPOINT((7 50),(10 51)))";
 

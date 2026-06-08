@@ -128,11 +128,13 @@ impl QString {
     }
 
     /// Return a this [`Ignoring`] flags as a byte.
+    #[allow(dead_code)]
     pub(crate) fn flags(&self) -> u8 {
         self.flags.0
     }
 
     /// Return a reference to this `inner` string.
+    #[allow(dead_code)]
     pub(crate) fn inner(&self) -> &str {
         &self.inner
     }

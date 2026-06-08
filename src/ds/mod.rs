@@ -3,18 +3,27 @@
 #![warn(missing_docs)]
 
 //! Groups artifacts providing Features and Resources from known types used in
-//! the geospatial ecosystem such as GeoPackage files.
+//! the geospatial ecosystem such as CSV, and GeoPackage files.
 //!
 
+#[cfg(feature = "csv_ds")]
 mod csv;
+#[cfg(feature = "gpkg_ds")]
 mod gpkg;
+#[cfg(feature = "pg_ds")]
 mod pg;
+#[cfg(any(feature = "gpkg_ds", feature = "pg_ds"))]
 mod sql;
+#[cfg(feature = "pg_ds")]
 mod types;
 
+#[cfg(feature = "csv_ds")]
 pub use csv::*;
+#[cfg(feature = "gpkg_ds")]
 pub use gpkg::*;
+#[cfg(feature = "pg_ds")]
 pub use pg::*;
+#[cfg(feature = "pg_ds")]
 pub use types::*;
 
 use crate::{Expression, Q};

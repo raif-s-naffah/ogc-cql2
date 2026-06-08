@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #![warn(missing_docs)]
+#![allow(dead_code)]
 
 //! Artifacts specific to handling geospatial data stored in GeoPackage database
 //! files.
@@ -56,6 +57,7 @@ pub(crate) struct TContents {
 
 /// _GeoPackage_ [`DataSource`] binding a `.gpkg` database file + a layer name that
 /// maps rows to _Features_ and [Resources][crate::Resource].
+#[cfg(feature = "gpkg_ds")]
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct GPkgDataSource {
@@ -64,12 +66,14 @@ pub struct GPkgDataSource {
     srid: Option<u32>,
 }
 
+#[cfg(feature = "gpkg_ds")]
 impl DataSource for GPkgDataSource {
     fn srid(&self) -> Option<u32> {
         self.srid
     }
 }
 
+#[cfg(feature = "gpkg_ds")]
 impl GPkgDataSource {
     /// Constructor.
     pub async fn from(gpkg_url: &str, layer_name: &str) -> Result<Self, MyError> {
@@ -719,22 +723,23 @@ fn qstr_to_sql(qs: QString) -> Result<String, MyError> {
 /// * `$layer`: Name of the table/layer containing the features' data.
 /// * `$feature`: `sqlx` _FromRow_ convertible structure to map database layer
 ///   table rows to _Features_.
+#[cfg(feature = "gpkg_ds")]
 #[macro_export]
 macro_rules! gen_gpkg_ds {
     ($vis:vis, $name:expr, $gpkg_url:expr, $layer:expr, $feature:expr) => {
         ::paste::paste! {
             /// Concrete GeoPackage source.
-            $vis struct [<$name GPkg>](GPkgDataSource);
+            $vis struct [<$name GPkg>](::ogc_cql2::GPkgDataSource);
 
             impl [<$name GPkg>] {
                 /// Constructor.
                 $vis async fn new() -> Result<Self, MyError> {
-                    let gpkp = GPkgDataSource::from($gpkg_url, $layer).await?;
+                    let gpkp = ::ogc_cql2::GPkgDataSource::from($gpkg_url, $layer).await?;
                     Ok(Self(gpkp))
                 }
 
                 /// Convert a GeoPackage row (aka Feature) to a generic Resource.
-                $vis fn to_resource(r: $feature) -> Result<Resource, Box<dyn Error>> {
+                $vis fn to_resource(r: $feature) -> Result<Resource, Box<dyn std::error::Error>> {
                     let row = $feature::try_from(r)?;
                     Ok(Resource::try_from(row)?)
                 }
@@ -745,7 +750,7 @@ macro_rules! gen_gpkg_ds {
                 }
 
                 /// Return a reference to the inner model data source.
-                $vis fn inner(&self) -> &GPkgDataSource {
+                $vis fn inner(&self) -> &::ogc_cql2::GPkgDataSource {
                     &self.0
                 }
             }
@@ -757,7 +762,7 @@ macro_rules! gen_gpkg_ds {
             }
 
             #[::async_trait::async_trait]
-            impl StreamableDS for [<$name GPkg>] {
+            impl ::ogc_cql2::StreamableDS for [<$name GPkg>] {
                 type Item = $feature;
                 type Err = MyError;
 
@@ -789,7 +794,7 @@ macro_rules! gen_gpkg_ds {
 
                 async fn fetch_where(
                     &self,
-                    exp: &Expression,
+                    exp: &::ogc_cql2::Expression,
                 ) -> Result<::futures::stream::BoxStream<'_, Result<$feature, MyError>>, MyError> {
                     let where_clause = self.0.to_sql(exp)?;
                     let sql = format!(r#"SELECT * FROM "{}" WHERE {}"#, self.vtable(), where_clause);
@@ -802,7 +807,7 @@ macro_rules! gen_gpkg_ds {
 
                 async fn stream_where(
                     &self,
-                    exp: &Expression,
+                    exp: &::ogc_cql2::Expression,
                 ) -> Result<::futures::stream::BoxStream<'_, Result<Resource, MyError>>, MyError> {
                     let rows = self.fetch_where(exp).await?;
                     let resources = rows

@@ -376,6 +376,7 @@ impl G {
 
     // ----- methods used to accommodate GeoPackage related ops...
 
+    #[cfg(any(feature = "gpkg_ds", feature = "pg_ds"))]
     pub(crate) fn to_sql(&self) -> Result<String, MyError> {
         match self {
             G::BBox(x) => x.to_sql(),

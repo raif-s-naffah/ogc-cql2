@@ -25,14 +25,11 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{
-    CountryCSV, CountryGPkg, CountryPG, countries, countries_gpkg, harness, harness_gpkg,
-    harness_sql,
-};
-use ogc_cql2::{Context, Evaluator, ExEvaluator, Expression, MyError, Outcome, Q, Resource};
+use ogc_cql2::prelude::*;
 use std::error::Error;
 
 // Countries data set contains 177 records...
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 #[rustfmt::skip]
 const DISJOINT: [(&str, u32); 4] = [
     ("S_DISJOINT(geom,BBOX(-180,-90,180,90))",                               0),
@@ -68,32 +65,47 @@ fn test_invalid_coordinates() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryCSV, harness};
+
     let ds = CountryCSV::new();
     harness(ds, &DISJOINT)
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryGPkg, harness_gpkg};
+
     let ds = CountryGPkg::new().await?;
     harness_gpkg(ds, &DISJOINT).await
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryGPkg, harness_sql};
+
     let ds = CountryGPkg::new().await?;
     harness_sql(ds, &DISJOINT).await
 }
 
+#[cfg(feature = "pg_ds")]
 #[tokio::test]
 async fn test_pg_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{CountryPG, harness_sql};
+
     let ds = CountryPG::new().await?;
     harness_sql(ds, &DISJOINT).await
 }
 
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test_e3_intersect() -> Result<(), Box<dyn Error>> {
+    use crate::utils::countries;
+
     const E1: &str = "S_DISJOINT(geom,LINESTRING(7 50, 10 51))";
     const E2: &str = "S_INTERSECTS(geom,LINESTRING(7 50, 10 51))";
 
@@ -119,8 +131,11 @@ fn test_e3_intersect() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_e3_intersect_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::countries_gpkg;
+
     const E1: &str = "S_DISJOINT(geom,LINESTRING(7 50, 10 51))";
     const E2: &str = "S_INTERSECTS(geom,LINESTRING(7 50, 10 51))";
 
@@ -144,8 +159,11 @@ async fn test_e3_intersect_gpkg() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test_e4_intersect() -> Result<(), Box<dyn Error>> {
+    use crate::utils::countries;
+
     const E1: &str = "S_DISJOINT(geom,POINT(7.02 49.92))";
     const E2: &str = "S_INTERSECTS(geom,POINT(7.02 49.92))";
 
@@ -171,8 +189,11 @@ fn test_e4_intersect() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_e4_intersect_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::countries_gpkg;
+
     const E1: &str = "S_DISJOINT(geom,POINT(7.02 49.92))";
     const E2: &str = "S_INTERSECTS(geom,POINT(7.02 49.92))";
 

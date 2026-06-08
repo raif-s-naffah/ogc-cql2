@@ -101,16 +101,19 @@ impl E {
     }
 
     // Return TRUE if this is an Identifier; FALSE otherwise.
+    #[allow(dead_code)]
     pub(crate) fn is_id(&self) -> bool {
         matches!(self, E::Id(_))
     }
 
     // Return TRUE if it's a literal value or just a property name.
+    #[allow(dead_code)]
     pub(crate) fn is_literal_or_id(&self) -> bool {
         self.is_literal() || self.is_id()
     }
 
     // Return TRUE if this is an Interval; FALSE otherwise.
+    #[allow(dead_code)]
     pub(crate) fn is_interval(&self) -> bool {
         matches!(self, E::Interval(_, _))
     }
@@ -131,6 +134,7 @@ impl E {
         }
     }
 
+    #[allow(dead_code)]
     pub(crate) fn as_id(&self) -> Option<&str> {
         match self {
             E::Id(x) => Some(x),
@@ -138,7 +142,7 @@ impl E {
         }
     }
 
-    // pub(crate) fn as_interval(&self) -> Option<(&E, &E)> {
+    #[allow(dead_code)]
     pub(crate) fn as_interval(&self) -> Option<(E, E)> {
         match self {
             E::Interval(x, y) => {

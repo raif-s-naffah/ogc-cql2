@@ -12,9 +12,10 @@
 //! * store the valid predicates for each data source.
 //!
 
-use crate::utils::{PlaceCSV, PlaceGPkg, PlacePG, harness, harness_gpkg, harness_sql};
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 use std::error::Error;
 
+#[cfg(any(feature = "csv_ds", feature = "gpkg_ds", feature = "pg_ds"))]
 #[rustfmt::skip]
 const PREDICATES: [(&str, u32); 14] = [
     (r#"name LIKE 'B_r%'"#,                                                         3),
@@ -33,26 +34,38 @@ const PREDICATES: [(&str, u32); 14] = [
     (r#"boolean not in (false)"#,                                                   2),
 ];
 
+#[cfg(feature = "csv_ds")]
 #[test]
 fn test() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlaceCSV, harness};
+
     let ds = PlaceCSV::new();
     harness(ds, &PREDICATES)
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_gpkg() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlaceGPkg, harness_gpkg};
+
     let ds = PlaceGPkg::new().await?;
     harness_gpkg(ds, &PREDICATES).await
 }
 
+#[cfg(feature = "gpkg_ds")]
 #[tokio::test]
 async fn test_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlaceGPkg, harness_sql};
+
     let ds = PlaceGPkg::new().await?;
     harness_sql(ds, &PREDICATES).await
 }
 
+#[cfg(feature = "pg_ds")]
 #[tokio::test]
 async fn test_pg_sql() -> Result<(), Box<dyn Error>> {
+    use crate::utils::{PlacePG, harness_sql};
+
     let ds = PlacePG::new().await?;
     harness_sql(ds, &PREDICATES).await
 }
