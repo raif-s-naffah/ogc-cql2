@@ -49,7 +49,7 @@ impl<'r> Decode<'r, Postgres> for G {
 
 // ===== PostgreSQL DATE type =================================================
 
-/// Our representation of a PostgreSQL DATE type to ease w/ sqlx and jiff.
+/// Our representation of a PostgreSQL DATE type to ease working w/ sqlx and jiff.
 #[derive(Debug)]
 pub struct PgDate(pub Date);
 

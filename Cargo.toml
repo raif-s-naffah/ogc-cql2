@@ -1,7 +1,7 @@
 [package]
 name = "ogc-cql2"
 authors = ["Raif S. Naffah <raif@mailbox.org>"]
-version = "0.6.0"
+version = "0.7.0"
 edition = "2024"
 description = "OGC CQL2 Text + JSON Encoding parser and interpreter in Rust"
 repository = "https://github.com/raif-s-naffah/ogc-cql2"
@@ -52,9 +52,9 @@ walkdir = "2.5.0"
 
 [features]
 default = []                         # user MUST select which data-source(s) to use...
-csv_ds = ["csv"]                     # CSV data-source
-gpkg_ds = ["sqlx"]                   # GeoPackage data-source
-pg_ds = ["sqlx"]                     # PostGIS tables in PostgreSQL database
+csv_ds = ["dep:csv"]                 # CSV data-source
+gpkg_ds = ["dep:sqlx"]               # GeoPackage data-source
+pg_ds = ["dep:sqlx"]                 # PostGIS tables in PostgreSQL database
 all = ["csv_ds", "gpkg_ds", "pg_ds"]
 
 [[bench]]

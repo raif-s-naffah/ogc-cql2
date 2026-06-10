@@ -97,12 +97,12 @@ There are three (3) groups: `parse`, `eval` and `sql` tracking parsing expressio
 
 To run all the benchmarks do
 ```bash
-  $ cargo bench
+  $ cargo bench -F all↵
 ```
 
 To run a specific group; e.g. `eval`, do
 ```bash
-  $ cargo bench --bench eval
+  $ cargo bench -F all --bench eval↵
 ```
 
 The final report will be generated in the local project's home under `target/criterion`. An HTML report index page should be generated in `report/index.html` w/in that folder.
@@ -160,11 +160,11 @@ This library relies on _GEOS_ by virtue of its dependence on the [`geos`][5] cra
 Name            : geos
 Epoch           : 0
 Version         : 3.14.1
-Release         : 1.fc43
+Release         : 2.fc44
 Architecture    : x86_64
-Installed size  : 4.1 MiB
-Source          : geos-3.14.1-1.fc43.src.rpm
-From repository : updates
+Installed size  : 4.3 MiB
+Source          : geos-3.14.1-2.fc44.src.rpm
+From repository : fedora
 Summary         : GEOS is a C++ port of the Java Topology Suite
 URL             : http://trac.osgeo.org/geos/
 License         : LGPL-2.1-only
@@ -182,11 +182,11 @@ This library, as of version 0.3.0, supports _GeoPackage_ database files. This re
 ```bash
 Name            : sqlite
 Epoch           : 0
-Version         : 3.50.2
-Release         : 2.fc43
+Version         : 3.51.2
+Release         : 1.fc44
 Architecture    : x86_64
-Installed size  : 1.8 MiB
-Source          : sqlite-3.50.2-2.fc43.src.rpm
+Installed size  : 1.9 MiB
+Source          : sqlite-3.51.2-1.fc44.src.rpm
 From repository : fedora
 Summary         : Library that implements an embeddable SQL database engine
 URL             : http://www.sqlite.org/
@@ -200,10 +200,10 @@ Vendor          : Fedora Project
 Name            : libspatialite
 Epoch           : 0
 Version         : 5.1.0
-Release         : 11.fc43
+Release         : 12.fc44
 Architecture    : x86_64
-Installed size  : 15.3 MiB
-Source          : libspatialite-5.1.0-11.fc43.src.rpm
+Installed size  : 15.0 MiB
+Source          : libspatialite-5.1.0-12.fc44.src.rpm
 From repository : fedora
 Summary         : Enables SQLite to support spatial data
 URL             : https://www.gaia-gis.it/fossil/libspatialite
@@ -241,7 +241,6 @@ ogc_cql2 = { version = "...", features = ["all"] }
 
 In no particular order...
 
-- [ ] Implement more _Data Sources_ such [FlatGeobuf](https://flatgeobuf.org/).
 - [ ] Add an option to the `repl` command line tool to output valid expressions as SQL WHERE clauses.
 - [ ] Investigate implementing basic spatial operators for 2D geometries in pure Rust; i.e. removing dependence on the `geos` crate.
 - [ ] Implement missing conformance tests preferably after finding an external set of Test Vectors.

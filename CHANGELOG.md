@@ -1,3 +1,10 @@
+# Version 0.7.0 (2026-06-10)
+
+* Use explicit `dep:xxx` syntax in feature definitions when relying on
+  optional dependencies.
+* Update RPM info of external libs in documentation.
+* Upgrade dependencies to latest versions.
+
 # Version 0.6.0 (2026-06-08)
 
 * Introduce conditional compilation features, one for each supported
