@@ -1,3 +1,9 @@
+# Version 0.7.1 (2026-07-14)
+
+* Use Rust 1.97.0.
+* Fixed some documentation unresolved links.
+* Upgrade dependencies to latest versions.
+
 # Version 0.7.0 (2026-06-10)
 
 * Use explicit `dep:xxx` syntax in feature definitions when relying on

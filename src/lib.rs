@@ -67,8 +67,9 @@
 //! filter (i.e. include or exclude) resources based on the result of [`Expression`]s.
 //!
 //! The [`DataSource`] (marker) trait represents those objects. Currently the
-//! library provides three implementations: [`CSVDataSource`], [`GPkgDataSource`],
-//! and [`PGDataSource`].  The first represents _Comma Separated Values_ (CSV) sourced
+//! library provides three implementations: `CSVDataSource`, `GPkgDataSource`,
+//! and `PGDataSource`, gated behind the following corresponding _Features_: `csv_ds`,
+//! `gpkg_ds`, and `pg_ds`.  The first represents _Comma Separated Values_ (CSV) sourced
 //! from tabular data where each row is mapped to a _Feature_ containing one geometry
 //! (spatial) property and other non-geometry attributes. The second represents
 //! [GeoPackage][gpkg] files. A _GeoPackage_ is
@@ -76,11 +77,11 @@
 //! > self-describing, cocurrentlympact format for transferring geospatial information.
 //! > It is a platform-independent SQLite database file_...
 //!
-//! The third [`PGDataSource`] allows processing [_PostGIS_](https://postgis.net/) enabled
+//! The third `PGDataSource` allows processing [_PostGIS_](https://postgis.net/) enabled
 //! [_PostgreSQL_](https://www.postgresql.org/) tables.
 //!
 //! Coding concrete implementations of those data source traits is facilitated
-//! by the library macros: [gen_csv_ds!], [gen_gpkg_ds!], and [gen_pg_ds!] for the three
+//! by the library macros: `gen_csv_ds!`, `gen_gpkg_ds!`, and `gen_pg_ds! for the three
 //! supported [`DataSource`] implementations.
 //!
 //! # GIS Features and Resources
@@ -194,7 +195,7 @@
 //! [_Iterator_](https://doc.rust-lang.org/std/iter/trait.Iterator.html) over
 //! the _Features_ of the data source.
 //!
-//! Considering that the [`CSVDataSource`] related macro [`gen_csv_ds!`] does
+//! Considering that the `CSVDataSource` related macro `gen_csv_ds!` does
 //! exactly that, one can easily write something like this...
 //!
 //! ```rust
@@ -244,9 +245,9 @@
 //! contents in the best way it can; e.g. SQL WHERE clause for a _GeoPackage_
 //! file, and _PostGIS_ DB tables, etc...
 //!
-//! Similar to the CSV data source, the [`gen_gpkg_ds!`] macro does the heavy
+//! Similar to the CSV data source, the `gen_gpkg_ds!` macro does the heavy
 //! lifting generating the necessary artifcats for a _GeoPackage_ data-source.
-//! As does the [`gen_pg_ds!`] macro for a _PostGIS_ data-source.
+//! As does the `gen_pg_ds!` macro for a _PostGIS_ data-source.
 //!
 //!
 //! # Relative performance
