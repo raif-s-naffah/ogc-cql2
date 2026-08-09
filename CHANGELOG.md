@@ -1,3 +1,8 @@
+# Version 0.7.2 (2026-08-09)
+
+* Use Rust 1.97.1.
+* Upgrade dependencies to latest versions.
+
 # Version 0.7.1 (2026-07-14)
 
 * Use Rust 1.97.0.
