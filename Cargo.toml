@@ -14,19 +14,19 @@ categories = ["data-structures", "encoding", "parser-implementations", "science:
 async-trait = "0.1.92"
 dotenvy = "0.15.7"
 futures = "0.3.33"
-geos = { version = "11.1.1", features = ["v3_12_0"] }
-jiff = { version = "0.2.35", features = ["serde"] }
+geos = { version = "11.2.2", features = ["v3_12_0"] }
+jiff = { version = "0.2.37", features = ["serde"] }
 paste = "1.0.15"
 peg = "0.8.6"
 proj = { version = "0.31.0", default-features = false }
 # used in 'typify' generated code, which in turn is used, after modification,
 # to bootstrap the JSON-encoded parser
-regress = { version = "0.11.1", features = ["prohibit-unsafe"] }
+regress = { version = "0.12.0", features = ["prohibit-unsafe"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 # needed to work-around the limitation of 'typify' unable to properly
 # handle `enum` variants that consist of symbols; e.g. '+', '-', etc...
-serde_with = { version = "3.21.0", features = ["macros"] }
+serde_with = { version = "3.23.0", features = ["macros"] }
 thiserror = "2.0.20"
 tokio = { version = "1.53.1", features = ["full"] }
 tracing = "0.1.44"
