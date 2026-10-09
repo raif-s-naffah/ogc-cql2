@@ -1,3 +1,9 @@
+# Version 0.7.4 (2026-10-09)
+
+* Use Rust 1.99.
+* Address deprecation notice of f32/f64.
+* Upgrade dependencies to latest versions.
+
 # Version 0.7.3 (2026-09-22)
 
 * Use Rust 1.98.1.

@@ -9,7 +9,6 @@ use crate::{
     MyError,
     geom::{XY1V, XY2V, XY3V},
 };
-use core::f64;
 use std::ops::RangeInclusive;
 
 // NOTE (rsn) 20251022 - we do not distinguish between XYZ and XYM for now
